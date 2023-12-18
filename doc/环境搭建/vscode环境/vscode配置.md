@@ -79,3 +79,9 @@ ctrl+shift+p打开命令面板，输入：
 直接去main.cpp里面按F5运行。应该会跳出来一个窗口。
 
 什么？你说上面include全是红波浪线？别管，不影响运行。
+
+## 打开UI设计器
+
+ctrl+shift+p打开命令面板，输入：
+
+    > QtConfigure:Open Qt Designer

@@ -2,7 +2,7 @@
 
 使用文件夹下提供的安装包。
 
-打开cmd，将安装包拖入cmd，打一个空格，输入“--mirror https://mirrors.tuna.tsinghua.edu.cn/qt”，回车。
+打开cmd，将安装包拖入cmd，打一个空格，输入“ --mirror https://mirrors.tuna.tsinghua.edu.cn/qt ” ，回车。
 
 ![Alt text](images/image.png)
 

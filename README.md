@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-18 15:17:25
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-19 00:07:12
+ * @LastEditTime : 2023-12-19 00:26:21
  * @FilePath     : \OS-Experiment\README.md
  * @Description  : 
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -16,6 +16,7 @@
 |置换策略|目录结构|外存组织|空闲磁盘管理|进程间通信|
 |:-:|:-:|:-:|:-:|:-:|
 |全局置换CLOCK|树形目录|FAT|成组链接法|命名管道|
+|把自己名字填上|把自己名字填上|把自己名字填上|宋子墨|把自己名字填上|
 
 ## 环境搭建
 
