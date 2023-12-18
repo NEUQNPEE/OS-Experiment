@@ -1,0 +1,4 @@
+D:/OS/OS-Experiment/build/CMakeFiles/HelloWorld.dir
+D:/OS/OS-Experiment/build/CMakeFiles/edit_cache.dir
+D:/OS/OS-Experiment/build/CMakeFiles/rebuild_cache.dir
+D:/OS/OS-Experiment/build/CMakeFiles/HelloWorld_autogen.dir

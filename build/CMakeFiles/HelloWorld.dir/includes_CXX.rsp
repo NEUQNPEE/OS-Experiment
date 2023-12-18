@@ -1,0 +1,1 @@
+-I"D:/OS/OS-Experiment/build" -I"D:/OS/OS-Experiment" -I"D:/OS/OS-Experiment/build/HelloWorld_autogen/include" -isystem E:/QT/6.2.4/mingw_64/include/QtWidgets -isystem E:/QT/6.2.4/mingw_64/include -isystem E:/QT/6.2.4/mingw_64/include/QtCore -isystem "E:/QT/6.2.4/mingw_64/mkspecs/win32-g++" -isystem E:/QT/6.2.4/mingw_64/include/QtGui

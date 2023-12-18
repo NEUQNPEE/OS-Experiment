@@ -1,0 +1,20 @@
+[
+{
+  "directory": "D:/OS/OS-Experiment/build",
+  "command": "E:\\QT\\Tools\\mingw1120_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NEEDS_QMAIN -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/HelloWorld.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\HelloWorld.dir\\HelloWorld_autogen\\mocs_compilation.cpp.obj -c D:\\OS\\OS-Experiment\\build\\HelloWorld_autogen\\mocs_compilation.cpp",
+  "file": "D:/OS/OS-Experiment/build/HelloWorld_autogen/mocs_compilation.cpp",
+  "output": "CMakeFiles/HelloWorld.dir/HelloWorld_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "D:/OS/OS-Experiment/build",
+  "command": "E:\\QT\\Tools\\mingw1120_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NEEDS_QMAIN -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/HelloWorld.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\HelloWorld.dir\\src\\HelloWorld.cpp.obj -c D:\\OS\\OS-Experiment\\src\\HelloWorld.cpp",
+  "file": "D:/OS/OS-Experiment/src/HelloWorld.cpp",
+  "output": "CMakeFiles/HelloWorld.dir/src/HelloWorld.cpp.obj"
+},
+{
+  "directory": "D:/OS/OS-Experiment/build",
+  "command": "E:\\QT\\Tools\\mingw1120_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DQT_CORE_LIB -DQT_GUI_LIB -DQT_NEEDS_QMAIN -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/HelloWorld.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\HelloWorld.dir\\src\\main.cpp.obj -c D:\\OS\\OS-Experiment\\src\\main.cpp",
+  "file": "D:/OS/OS-Experiment/src/main.cpp",
+  "output": "CMakeFiles/HelloWorld.dir/src/main.cpp.obj"
+}
+]
