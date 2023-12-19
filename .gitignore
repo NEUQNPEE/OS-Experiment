@@ -1,3 +1,4 @@
 .vscode/
 build
 CmakeLists.txt
+.vscode/settings.json
