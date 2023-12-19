@@ -73,6 +73,55 @@ ctrl+shift+p打开命令面板，输入：
 
 选择你的编译套件。应该是GCC 11.2.0 x86_64-w64-mingw32。如果无选项可以使用Qt:Scan for Qt kit搜索，或重启vscode再搜索再选择。
 
+### 修改QT路径
+
+请修改以下内容：
+
+* 根目录下的CMakeLists.txt：
+
+```cmake
+set(CMAKE_PREFIX_PATH "e:/QT/6.2.4/mingw_64") # Qt Kit Dir
+```
+
+这一行的路径应该为你自己QT的路径.
+
+* .vscode文件夹下的launch.json：
+
+```json
+"environment": [
+                {
+                    "name": "PATH",
+                    "value": "e:/QT/6.2.4/mingw_64/bin"
+                }
+            ],
+            "externalConsole": false,
+            "miDebuggerPath": "e:/QT/Tools/mingw1120_64/bin/gdb.exe",
+            "visualizerFile": "c:\\Users\\tdfsbrx\\AppData\\Roaming\\Code\\User\\workspaceStorage\\d54ea10c6683dece2c54d94e32dd2227\\tonka3000.qtvsctools\\qt.natvis.xml"
+```
+
+value的路径改为你自己QT的路径,miDebuggerPath改为你自己QT的路径，visualizerFile应该是自动修改为你自己的路径了。
+
+* .vscode文件夹下的settings.json：
+
+```json
+{
+    "qtConfigure.qtKitDir": "e:/QT/6.2.4/mingw_64"
+}
+```
+
+这一行的路径应该改为你自己的路径.
+
+* .vscode文件夹下的tasks.json：
+
+
+```json
+
+ "label": "C/C++: g++.exe 生成活动文件",
+        "command": "E:\\MinGW\\mingw64\\bin\\g++.exe",
+```
+
+command的路径应该改为你自己的路径.
+
 ## 运行
 
 直接去main.cpp里面按F5运行。应该会跳出来一个窗口。
