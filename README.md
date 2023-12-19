@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-18 15:17:25
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-19 00:26:21
+ * @LastEditTime : 2023-12-19 18:27:28
  * @FilePath     : \OS-Experiment\README.md
  * @Description  : 
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -21,3 +21,7 @@
 ## 环境搭建
 
 请查看doc文件夹。
+
+## 代码编写
+
+考虑到本地环境的不一致性，所有的代码直接向主分支提交，请注意不要提交配置文件。
