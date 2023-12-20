@@ -5,3 +5,4 @@
 
 struct Disk;
 struct DiskBuilder;
+struct DiskBlock;

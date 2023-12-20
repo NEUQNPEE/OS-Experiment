@@ -10,6 +10,11 @@ HelloWorld::HelloWorld(QWidget *parent)
 
     // 设置窗口大小
     this->resize(1200, 800);
+    this->setAutoFillBackground(true);
+    // 设置窗口背景
+    QPalette palette;
+    palette.setBrush(QPalette::Window,QBrush(QPixmap("icon/background.jpeg").scaled(this->size())));
+    this->setPalette(palette);
 
     // 添加一个按钮
     QPushButton *btn = new QPushButton("按钮", this);
