@@ -2,6 +2,9 @@
 #include "ui_HelloWorld.h"
 #include <QMainWindow>
 #include <QPushButton>
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QToolBar>
 
 class HelloWorld : public QMainWindow {
     Q_OBJECT

@@ -3,7 +3,7 @@
 using namespace std;
 
 // 模拟内存
-typedef struct memory
+struct Memory
 {
     // 访问位
     int status = 0;
@@ -13,4 +13,4 @@ typedef struct memory
     int number = -1;
     // 存储的字符信息
     string info = "";
-} memory;
+}memory;

@@ -2,10 +2,8 @@
 #include <algorithm>
 #include "memory.h"
 
-using namespace std;
-
 // 模拟的给文件分配的8个内存块，详见Memory.h。具体实现需要商讨后确定
-memory mem[8];
+Memory mem[8];
 
 // 模拟的放入内存的文件分块后的页序列。具体实现需要商讨后确定
 int page[1024];
@@ -22,7 +20,7 @@ void initialPage()
 // 暂定的内存接口。具体实现需商讨后确定
 void initialMemory()
 {
-    fill(mem, mem + 8, 0);
+    // fill(mem, mem + 8, 0);
 }
 
 void CLOCK()

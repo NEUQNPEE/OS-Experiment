@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-20 18:27:39
+ * @LastEditTime : 2023-12-20 21:42:38
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -17,7 +17,7 @@
 */
 
 // todo-1 初始化的各值由配置文件读入
-// 磁盘类，用于模拟磁盘
+// 磁盘结构体，用于模拟磁盘
 struct Disk
 {
 private:
@@ -35,28 +35,73 @@ private:
     int exchange_area_size;
 
 public:
+    // 设置磁盘空间大小
     void set_disk_size(int size)
     {
         disk_space_size = size;
         disk_space = new char[size];
     }
 
+    // 获取磁盘空间大小
+    int get_disk_size()
+    {
+        return disk_space_size;
+    }
+
+    // 设置磁盘块大小
     void set_block_size(int size)
     {
         this->block_size = size;
     }
 
+    // 获取磁盘块大小
+    int get_block_size()
+    {
+        return block_size;
+    }
+
+    // 设置文件区分区指针以及块数
     void set_file_area(int head, int size)
     {
         this->file_area_head = disk_space + head;
         this->file_area_size = size;
     }
 
+    // 获取文件区盘块数量
+    int get_file_area_size()
+    {
+        return file_area_size;
+    }
 
+    // 向文件区写入数据
+    void write_file_area(int n, char *data)
+    {
+        // TODO memcpy(file_area_head + n * block_size, data, block_size);
+    }
+
+    // 获取文件区第n块的内容
+    char *get_file_area_block(int n)
+    {
+        return file_area_head + n * block_size;
+    }
+
+    // 设置兑换分区分区指针以及块数
     void set_exchange_area(int head, int size)
     {
         this->exchange_area_head = disk_space + head;
         this->exchange_area_size = size;
+    }
+
+    // 获取兑换分区盘块数量
+    int get_exchange_area_size()
+    {
+        return exchange_area_size;
+    }
+
+    // 获取兑换分区第n块的内容
+    char *get_exchange_area_block(int n)
+    {
+        return exchange_area_head + n * block_size;
     }
 
     void str()
@@ -68,6 +113,7 @@ public:
     }
 };
 
+// 磁盘构造器
 struct DiskBuilder
 {
     Disk disk;
