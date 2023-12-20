@@ -2,8 +2,8 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-20 01:35:23
- * @FilePath     : \vscodecpp\disk.cpp
+ * @LastEditTime : 2023-12-20 18:27:39
+ * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
  * Copyright (c) 2023 by NieFire, All Rights Reserved.
@@ -103,15 +103,15 @@ struct DiskBuilder
 };
 
 
-int main()
-{
-    DiskBuilder disk_builder;
-    Disk disk = disk_builder.set_disk_size(40*1024)
-                            .set_block_size(40)
-                            .set_file_area(0, 900)
-                            .set_exchange_area(900, 124)
-                            .build();
-    disk.str();
+// int main()
+// {
+//     DiskBuilder disk_builder;
+//     Disk disk = disk_builder.set_disk_size(40*1024)
+//                             .set_block_size(40)
+//                             .set_file_area(0, 900)
+//                             .set_exchange_area(900, 124)
+//                             .build();
+//     disk.str();
 
-    return 0;
-}
+//     return 0;
+// }

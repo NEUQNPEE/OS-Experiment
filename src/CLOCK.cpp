@@ -1,5 +1,5 @@
 #include <iostream>
-#include "MyFile.h"
+// #include "MyFile.h"
 #include "Memory.h"
 
 using namespace std;
@@ -82,9 +82,9 @@ void CLOCK()
     }
 }
 
-int main()
-{
-    initialPage();
-    CLOCK();
-    return 0;
-}
+// int main()
+// {
+//     initialPage();
+//     CLOCK();
+//     return 0;
+// }

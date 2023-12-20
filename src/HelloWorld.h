@@ -1,6 +1,7 @@
 #pragma once
 #include "ui_HelloWorld.h"
 #include <QMainWindow>
+#include <QPushButton>
 
 class HelloWorld : public QMainWindow {
     Q_OBJECT
