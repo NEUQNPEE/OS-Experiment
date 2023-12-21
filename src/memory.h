@@ -3,14 +3,7 @@
 using namespace std;
 
 // 模拟内存
-struct Memory
-{
-    // 访问位
-    int status = 0;
-    // 内存块大小，以字节为单位
-    int size = 40;
-    // 块内页号
-    int number = -1;
-    // 存储的字符信息
-    string info = "";
-}memory;
+char memory[2560];
+
+//将文件的内容填充到内存中
+void fillMemory(int begin, int size);
