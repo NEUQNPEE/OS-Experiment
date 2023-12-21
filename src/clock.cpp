@@ -55,7 +55,7 @@ void CLOCK(int page)
     }
     if (flag1 == true)
     {
-        fillMemory(tempBlockNumber[flag], 40);
+        fillMemory(block[tempBlockNumber[flag]].begin, 40);
         return;
     }
 
@@ -74,7 +74,7 @@ void CLOCK(int page)
     }
     if (flag2 == true)
     {
-        fillMemory(tempBlockNumber[flag], 40);
+        fillMemory(block[tempBlockNumber[flag]].begin, 40);
         return;
     }
 
@@ -93,7 +93,7 @@ void CLOCK(int page)
     }
     if (flag3 == true)
     {
-        fillMemory(tempBlockNumber[flag], 40);
+        fillMemory(block[tempBlockNumber[flag]].begin, 40);
         return;
     }
 
@@ -104,7 +104,7 @@ void CLOCK(int page)
     }
     block[tempBlockNumber[0]].pageNumber = page;
     // 文件内容填充到内存中
-    fillMemory(tempBlockNumber[0], 40);
+    fillMemory(block[tempBlockNumber[0]].begin, 40);
 }
 
 // 暂定的文件读入到内存的接口，声明见memoryBlock.h。具体实现需商讨后确定
