@@ -44,7 +44,7 @@ int FatTest::allocateBlock()
             return i;
         }
     }
-    throw std::runtime_error("No free blocks available."); // 没有可用块
+    // throw std::runtime_error("No free blocks available."); // 没有可用块
 }
 
 // 释放给定索引的块
@@ -63,7 +63,7 @@ void FatTest::writeExchangeArea(int index, const QByteArray &data)
     int endPos = startPos + BLOCK_SIZE - 1;
     if (endPos >= DISK_SIZE)
     {
-        throw std::runtime_error("Beyond disk boundaries!"); // 超出磁盘边界
+        // throw std::runtime_error("Beyond disk boundaries!"); // 超出磁盘边界
     }
     for (int i = 0; i < BLOCK_SIZE; ++i)
     {

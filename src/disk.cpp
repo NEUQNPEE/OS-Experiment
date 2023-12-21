@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-21 02:11:32
+ * @LastEditTime : 2023-12-21 19:00:36
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -119,17 +119,23 @@ private:
     // 磁盘块大小
     int block_size;
 
+    // 磁盘块数
+    int block_num;
+
     // 文件区块数
     int file_area_block_size;
 
-    // 文件区磁盘块
-    std::vector<DiskBlock> file_area_blocks;
+    // 磁盘块
+    std::vector<DiskBlock> blocks;
+
+    // 文件区磁盘块(放指针)
+    std::vector<DiskBlock *> file_area_blocks;
 
     // 兑换分区块数
     int exchange_area_block_size;
 
-    // 兑换分区磁盘块
-    std::vector<DiskBlock> exchange_area_blocks;
+    // 兑换分区磁盘块(放指针)
+    std::vector<DiskBlock *> exchange_area_blocks;
 
 public:
     // 设置磁盘空间大小
@@ -148,6 +154,9 @@ public:
     void set_block_size(int size)
     {
         block_size = size;
+
+        // 已知磁盘空间大小，磁盘块大小，计算磁盘块数
+        set_block_num(disk_space_size / block_size);
     }
 
     // 获取磁盘块大小
@@ -156,6 +165,17 @@ public:
         return block_size;
     }
 
+    // 设置磁盘块数
+    void set_block_num(int num)
+    {
+        block_num = num;
+    }
+
+    // 获取磁盘块数
+    int get_block_num()
+    {
+        return block_num;
+    }
     // 设置文件区块数
     void set_file_area(int size)
     {
@@ -173,16 +193,9 @@ public:
     {
         for (int i = 0; i < file_area_block_size; i++)
         {
-            DiskBlock block(block_size, i);
+            DiskBlock *block = &blocks[i];
             file_area_blocks.push_back(block);
         }
-    }
-
-    // 初始化文件区
-    void init_file_area(int size)
-    {
-        set_file_area(size);
-        set_file_area_blocks();
     }
 
     // 设置兑换分区块数
@@ -200,18 +213,30 @@ public:
     // 设置兑换分区磁盘块
     void set_exchange_area_blocks()
     {
-        for (int i = 0; i < exchange_area_block_size; i++)
+        for (int i = file_area_block_size; i < file_area_block_size + exchange_area_block_size; i++)
         {
-            DiskBlock block(block_size, i);
+            DiskBlock *block = &blocks[i];
             exchange_area_blocks.push_back(block);
         }
     }
 
-    // 初始化兑换分区
-    void init_exchange_area(int size)
+    // 初始化所有磁盘块
+    void init_blocks()
     {
-        set_exchange_area(size);
+        for (int i = 0; i < block_num; i++)
+        {
+            DiskBlock block(block_size, i);
+            blocks.push_back(block);
+        }
+
+        set_file_area_blocks();
         set_exchange_area_blocks();
+    }
+
+    // 获取盘块号为n的盘块
+    DiskBlock *get_block(int n)
+    {
+        return &blocks[n];
     }
 
     void str()
@@ -221,22 +246,6 @@ public:
         std::cout << "file_area_size: " << file_area_block_size << std::endl;
         std::cout << "exchange_area_size: " << exchange_area_block_size << std::endl;
         // 看一下文件区的前三个块和兑换分区的前三个块
-        std::cout << "file_area_blocks: " << std::endl;
-        for (int i = 0; i < 3; i++)
-        {
-            std::cout << "block_size: " << file_area_blocks[i].size << std::endl;
-            std::cout << "block_number: " << file_area_blocks[i].number << std::endl;
-            std::cout << "block_status: " << file_area_blocks[i].status << std::endl;
-            std::cout << "block_content: " << file_area_blocks[i].content << std::endl;
-        }
-        std::cout << "exchange_area_blocks: " << std::endl;
-        for (int i = 0; i < 3; i++)
-        {
-            std::cout << "block_size: " << exchange_area_blocks[i].size << std::endl;
-            std::cout << "block_number: " << exchange_area_blocks[i].number << std::endl;
-            std::cout << "block_status: " << exchange_area_blocks[i].status << std::endl;
-            std::cout << "block_content: " << exchange_area_blocks[i].content << std::endl;
-        }
     }
 };
 
@@ -257,15 +266,21 @@ struct DiskBuilder
         return *this;
     }
 
-    DiskBuilder &init_file_area(int size)
+    DiskBuilder &set_file_area_block_num(int size)
     {
-        disk.init_file_area(size);
+        disk.set_file_area(size);
         return *this;
     }
 
-    DiskBuilder &init_exchange_area(int size)
+    DiskBuilder &set_exchange_area_block_num(int size)
     {
-        disk.init_exchange_area(size);
+        disk.set_exchange_area(size);
+        return *this;
+    }
+
+    DiskBuilder &init_blocks()
+    {
+        disk.init_blocks();
         return *this;
     }
 
@@ -275,15 +290,151 @@ struct DiskBuilder
     }
 };
 
+/*
+ * 磁盘管理类
+ * 使用成组链接法管理空闲块
+ */
+class DiskManager
+{
+public:
+    // 磁盘
+    Disk disk;
+private:
+    // 超级块索引
+    const int SUPER_BLOCK_INDEX = 0;
+
+    // 超级块
+    DiskBlock *super_block;
+
+    // 成组链块大小
+    const int GROUP_BLOCK_SIZE = 128;
+
+    // 成组链块
+    struct GroupBlock
+    {
+        // 存储的盘块号
+        std::vector<int> block_numbers;
+
+        // 下一个成组链块
+        GroupBlock *next_group_block;
+
+        // 初始化
+        GroupBlock(int begin, int size)
+        {
+            for (int i = begin; i < begin + size; i++)
+            {
+                block_numbers.push_back(i);
+            }
+        }
+
+        // 添加盘块号
+        void add_block(int block_number)
+        {
+            block_numbers.push_back(block_number);
+        }
+
+        // 设置下一个成组链块
+        void set_next_group_block(GroupBlock *next_group_block)
+        {
+            this->next_group_block = next_group_block;
+        }
+
+    };
+
+    // 成组链块唯一指针
+    GroupBlock *group_block;
+public:
+    // 初始化磁盘
+    void init_disk()
+    {
+        DiskBuilder disk_builder;
+        disk = disk_builder.set_disk_size(40 * 1024)
+                   .set_block_size(40)
+                   .set_file_area_block_num(900)
+                   .set_exchange_area_block_num(124)
+                   .init_blocks()
+                   .build();
+
+        // 指定第一个块为超级块
+        super_block = disk.get_block(SUPER_BLOCK_INDEX);
+
+        // 初始化成组链块
+        group_block = new GroupBlock(SUPER_BLOCK_INDEX, GROUP_BLOCK_SIZE);
+        int block_num = disk.get_block_num() - GROUP_BLOCK_SIZE;
+
+        int now_block_num = SUPER_BLOCK_INDEX + GROUP_BLOCK_SIZE;
+        GroupBlock* temp_block = group_block;
+        while (block_num > 0)
+        {
+            if (block_num > GROUP_BLOCK_SIZE)
+            {
+                temp_block->set_next_group_block(new GroupBlock(now_block_num, GROUP_BLOCK_SIZE));
+                temp_block = temp_block->next_group_block;
+                now_block_num += GROUP_BLOCK_SIZE;
+                block_num -= GROUP_BLOCK_SIZE;
+            }
+
+            if(block_num <= GROUP_BLOCK_SIZE && block_num > 0)
+            {
+                temp_block->set_next_group_block(new GroupBlock(now_block_num, block_num));
+                temp_block = temp_block->next_group_block;
+                temp_block->set_next_group_block(nullptr);
+                block_num = 0;
+            }
+        }
+
+        // todo 设置超级块内容
+    }
+
+    // 获取超级块内容
+    char *get_super_block_content()
+    {
+        return super_block->get_content();
+    }
+
+    // 设置超级块内容
+    void set_super_block_content(char *content)
+    {
+        super_block->set_content(content);
+    }
+
+    /*
+    * 比如说内存调用我的函数，要求放入一个文件
+    
+    */
+
+    // 放入文件函数
+    void save_file(char *file_content)
+    {
+        //解析文件名称
+
+        // 根据文件内容大小给他分配盘块
+
+    }
+
+    /**
+     * 内存管理系统把磁盘块读入，会记录读入的磁盘块号
+     */
+
+    // 取出文件函数
+
+    // 内存系统要求兑换分区存入内容,传入一个块的内容，同时传入块号
+
+    // 内存系统要求向兑换分区存入内容,传入n个块的内容，同时传入块号
+
+    // 内存系统要求从兑换分区取出内容,取出一个块的内容，同时取回块号
+
+    // 内存系统要求从兑换分区取出内容,取出n个块的内容，同时取回块号
+        
+};
+
 // int main()
 // {
-//     DiskBuilder disk_builder;
-//     Disk disk = disk_builder.set_disk_size(40 * 1024)
-//                     .set_block_size(40)
-//                     .init_file_area(900)
-//                     .init_exchange_area(124)
-//                     .build();
-//     disk.str();
+//     DiskManager disk_manager;
+
+//     disk_manager.init_disk();
+
+//     disk_manager.disk.str();
 
 //     return 0;
 // }
