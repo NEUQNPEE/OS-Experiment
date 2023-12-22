@@ -26,7 +26,7 @@ std::string gettime()
     }
     return str;
 }
-struct file; // 文件结构体的声明
+struct File; // 文件结构体的声明
 struct folder
 {
     /*文件夹属性
@@ -42,8 +42,8 @@ struct folder
     下级文件
     上级文件夹
     */
-    std::string type = "文件夹";
     std::string name;
+    std::string type = "文件夹";
     std::string addr;
     int size = 0;
     int File_number = 0;
@@ -51,9 +51,8 @@ struct folder
     std::string Create_time;
     std::string Change_time;
     std::vector<folder *> Folder_child;
-    std::vector<file *> File_child;
+    std::vector<File *> File_child;
     folder *dad;
-
     // 构造函数
     folder(std::string Name)
     {
@@ -63,7 +62,7 @@ struct folder
     }
 
     // 添加文件定义
-    void Add_file(file *fi);
+    void Add_file(File *fi);
 
     // 添加文件夹定义
     void Add_folder(folder *fo);
@@ -80,12 +79,30 @@ struct folder
         std::cout << "创建时间：" << Create_time << std::endl;
         std::cout << "更改时间：" << Change_time << std::endl;
     }
+    // 文件序列化
+    /*
+    名称
+    地址
+    创建时间
+    更改时间
+    内容
+    */
+    std::string serialize()
+    {
+
+        std::string str = "";
+        str += name + "$";
+        str += addr + "$";
+        str += Create_time + "$";
+        str += Change_time + "$";
+        return str;
+    }
 };
-struct file
+struct File
 {
     /*文件属性：
-    类型
     名称
+    类型
     地址
     内容
     大小
@@ -93,20 +110,18 @@ struct file
     修改时间
     上级文件夹
     */
-    std::string type;
     std::string name;
+    std::string type;
     std::string addr;
-    std::string content = "";
     int size = 0;
     std::string Create_time;
     std::string Change_time;
+    std::string content = "";
     folder *dad;
 
     // 构造函数
-    file(std::string Type, std::string Name)
+    File()
     {
-        this->type = Type;
-        this->name = Name;
         this->Create_time = gettime();
         this->Change_time = gettime();
     }
@@ -161,6 +176,52 @@ struct file
         size += sizeof(str);
     }
 
+    // 文件序列化
+    /*
+    名称
+    地址
+    创建时间
+    更改时间
+    内容
+    */
+    std::string serialize()
+    {
+
+        std::string str = "";
+        str += name + "$";
+        str += addr + "$";
+        str += Create_time + "$";
+        str += Change_time + "$";
+        str += content + "$";
+        return str;
+    }
+    // 文件反序列化
+    File deserialize(char *ch)
+    {
+        std::string str[5] = {};
+        int n = 0;
+        for (int i = 0; i < strlen(ch); i++)
+        {
+            if (ch[i] == '$')
+            {
+                n++;
+            }
+            else
+            {
+                str[n] += ch[i];
+            }
+        }
+        File file = File();
+        file.name = str[0];
+        file.addr = str[1];
+        file.Create_time = str[2];
+        file.Change_time = str[3];
+        file.content = str[4];
+        file.size = sizeof(file.content);
+        // 用type截取name中'.'后面部分的内容
+        file.type = file.name.substr(file.name.find('.') + 1);
+        return file;
+    }
     // 战术文件属性
     void show()
     {
@@ -174,7 +235,7 @@ struct file
 };
 
 // 添加文件实现
-void folder::Add_file(file *fi)
+void folder::Add_file(File *fi)
 {
     File_number++;
     this->size += fi->size;
