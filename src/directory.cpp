@@ -3,6 +3,10 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
+#include <sstream>
+#include <queue>
+std::vector<int> tree_number;
+std::vector<std::string> tree_ser_dir;
 std::string gettime()
 {
     std::string str = "";
@@ -54,9 +58,8 @@ struct folder
     std::vector<File *> File_child;
     folder *dad;
     // 构造函数
-    folder(std::string Name)
+    folder()
     {
-        this->name = Name;
         Create_time = gettime();
         Change_time = gettime();
     }
@@ -68,6 +71,7 @@ struct folder
     void Add_folder(folder *fo);
 
     // 展示属性
+    /*
     void show()
     {
         std::cout << "类型：" << type << std::endl;
@@ -79,7 +83,9 @@ struct folder
         std::cout << "创建时间：" << Create_time << std::endl;
         std::cout << "更改时间：" << Change_time << std::endl;
     }
-    // 文件序列化
+    */
+
+    // 文件夹序列化
     /*
     名称
     地址
@@ -87,16 +93,10 @@ struct folder
     更改时间
     内容
     */
-    std::string serialize()
-    {
+    std::string folder_serialize();
 
-        std::string str = "";
-        str += name + "$";
-        str += addr + "$";
-        str += Create_time + "$";
-        str += Change_time + "$";
-        return str;
-    }
+    // 文件夹反序列化
+    void folder_deserialize(std::string str);
 };
 struct File
 {
@@ -184,7 +184,7 @@ struct File
     更改时间
     内容
     */
-    std::string serialize()
+    std::string file_serialize()
     {
 
         std::string str = "";
@@ -196,27 +196,27 @@ struct File
         return str;
     }
     // 文件反序列化
-    File deserialize(char *ch)
+    File file_deserialize(std::string str)
     {
-        std::string str[5] = {};
+        std::string str1[5] = {};
         int n = 0;
-        for (int i = 0; i < strlen(ch); i++)
+        for (int i = 0; i < str.size(); i++)
         {
-            if (ch[i] == '$')
+            if (str[i] == '$')
             {
                 n++;
             }
             else
             {
-                str[n] += ch[i];
+                str1[n] += str[i];
             }
         }
         File file = File();
-        file.name = str[0];
-        file.addr = str[1];
-        file.Create_time = str[2];
-        file.Change_time = str[3];
-        file.content = str[4];
+        file.name = str1[0];
+        file.addr = str1[1];
+        file.Create_time = str1[2];
+        file.Change_time = str1[3];
+        file.content = str1[4];
         file.size = sizeof(file.content);
         // 用type截取name中'.'后面部分的内容
         file.type = file.name.substr(file.name.find('.') + 1);
@@ -234,6 +234,167 @@ struct File
     }
 };
 
+folder root = folder();
+// 初始化根目录
+void init_directory()
+{
+    root.name = "root";
+    root.dad = &root;
+    root.addr = "root";
+}
+// 子目录数生成
+void cdir_num_generate(folder fo = root)
+{
+    if (fo.Folder_child.size() == 0 && fo.File_child.size() == 0)
+    {
+        tree_number.push_back(0);
+        tree_number.push_back(1);
+        return;
+    }
+    else
+    {
+        for (int i = 0; i < fo.Folder_child.size(); i++)
+        {
+            tree_number.push_back(fo.Folder_child.size() + fo.File_child.size());
+            tree_number.push_back(1);
+        }
+        for (int i = 0; i < fo.File_child.size(); i++)
+        {
+            tree_number.push_back(0);
+            tree_number.push_back(0);
+        }
+    }
+    for (int i = 0; i < fo.Folder_child.size(); i++)
+    {
+        cdir_num_generate(*(fo.Folder_child[i]));
+    }
+}
+// 子目录数序列化
+std::string cdir_num_serialize()
+{
+    std::string str;
+    for (int i = 0; i < tree_number.size(); i++)
+    {
+        str += std::to_string(tree_number[i]) + '$';
+    }
+    return str;
+}
+// 树形目录生成
+void tree_generate(folder fo = root)
+{
+    for (int i = 0; i < fo.Folder_child.size(); i++)
+    {
+        tree_ser_dir.push_back((*(fo.Folder_child[i])).folder_serialize());
+    }
+    for (int i = 0; i < fo.File_child.size(); i++)
+    {
+        tree_ser_dir.push_back((*(fo.File_child[i])).file_serialize());
+    }
+    for (int i = 0; i < fo.Folder_child.size(); i++)
+    {
+        tree_generate(*(fo.Folder_child[i]));
+    }
+}
+
+// 树形目录序列化
+std::string tree_serialize()
+{
+    std::string str = root.folder_serialize() + "$$";
+    for (int i = 0; i < tree_ser_dir.size(); i++)
+    {
+        str += tree_ser_dir[i] + "$$";
+    }
+    return str;
+}
+// 文件和文件夹按照树形目录反序列化
+void fileOrFilder_deserialize(std::queue<int> arr1, std::queue<int> arr2, std::queue<std::string> str)
+{
+    std::queue<folder> q;
+    while (arr1.empty() == false)
+    {
+        int n = arr1.front();
+        arr1.pop();
+        if (arr2.front() == 1)
+        {
+            arr2.pop();
+            q.push(folder());
+            folder fo = q.front();
+            fo.folder_deserialize(str.front());
+            str.pop();
+            for (int i = 0; i < n; i++)
+            {
+                if (arr2.front() == 1)
+                {
+                    arr2.pop();
+                    folder fo_child_folder = folder();
+                    q.push(fo_child_folder);
+                    fo_child_folder.folder_deserialize(str.front());
+                    str.pop();
+                    fo.Add_folder(&fo_child_folder);
+                }
+                else
+                {
+                    arr2.pop();
+                    File fi_child_file = File();
+                    fi_child_file.file_deserialize(str.front());
+                    str.pop();
+                    fo.Add_file(&fi_child_file);
+                }
+            }
+            q.pop();
+        }
+        else
+        {
+        }
+    }
+}
+// 树形目录的反序列化
+void tree_deserialize(std::string tree_str, std::string f_str)
+{
+    std::queue<int> arr;
+    std::queue<int> arr1;
+    std::queue<int> arr2;
+    int n = 0;
+    // 使用字符串流分割字符串
+    std::istringstream iss(tree_str);
+    std::string number;
+    // 通过'$'分割字符串并将每个数字字符串转换成整数
+    while (std::getline(iss, number, '$'))
+    {
+        // 将字符串转换成整数并存入容器
+        int num;
+        std::istringstream(number) >> num;
+        arr.push(num);
+    }
+    while (arr.empty() == false)
+    {
+        if (n % 2 == 0)
+        {
+            arr1.push(arr.front());
+            arr.pop();
+        }
+        else
+        {
+            arr2.push(arr.front());
+            arr.pop();
+        }
+    }
+    std::queue<std::string> str;
+    for (int i = 0; i < f_str.size();)
+    {
+        for (int j = i; j < f_str.size(); j++)
+        {
+            if (f_str[j] == '$' && f_str[i + 1] == '$')
+            {
+                str.push(f_str.substr(i, j - i));
+                i = j + 2;
+                break;
+            }
+        }
+    }
+    // 文件或文件夹反序列化
+    fileOrFilder_deserialize(arr1, arr2, str);
+}
 // 添加文件实现
 void folder::Add_file(File *fi)
 {
@@ -298,6 +459,22 @@ void folder::Add_folder(folder *fo)
     fo->addr = fo->dad->addr + "\\" + fo->name;
 }
 
+// 文件夹序列化实现
+std::string folder::folder_serialize()
+{
+
+    std::string str = "";
+    str += name + "$";
+    str += addr + "$";
+    str += Create_time + "$";
+    str += Change_time + "$";
+    return str;
+}
+
+// 文件夹反序列化实现
+void folder::folder_deserialize(std::string str)
+{
+}
 /*
 int main()
 {
