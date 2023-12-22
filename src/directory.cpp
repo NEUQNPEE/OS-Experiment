@@ -474,6 +474,25 @@ std::string folder::folder_serialize()
 // 文件夹反序列化实现
 void folder::folder_deserialize(std::string str)
 {
+    std::string str1[4] = {};
+    int n = 0;
+    for (int i = 0; i < str.size(); i++)
+    {
+        if (str[i] == '$')
+        {
+            n++;
+        }
+        else
+        {
+            str1[n] += str[i];
+        }
+    }
+    folder fo = folder();
+    fo.name = str1[0];
+    fo.addr = str1[1];
+    fo.Create_time = str1[2];
+    fo.Change_time = str1[3];
+    fo.type = "文件夹";
 }
 /*
 int main()
