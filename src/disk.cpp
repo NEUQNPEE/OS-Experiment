@@ -299,6 +299,7 @@ class DiskManager
 public:
     // 磁盘
     Disk disk;
+
 private:
     // 超级块索引
     const int SUPER_BLOCK_INDEX = 0;
@@ -338,15 +339,19 @@ private:
         {
             this->next_group_block = next_group_block;
         }
-
     };
 
     // 成组链块唯一指针
     GroupBlock *group_block;
+
 public:
     // 初始化磁盘
     void init_disk()
     {
+        // 初始化文件分配表为所有块都是未分配的
+        int total_blocks = disk.get_block_num();
+        file_allocation_table.resize(total_blocks, false); // 所有块初始化为false，表示未分配
+
         DiskBuilder disk_builder;
         disk = disk_builder.set_disk_size(40 * 1024)
                    .set_block_size(40)
@@ -363,7 +368,7 @@ public:
         int block_num = disk.get_block_num() - GROUP_BLOCK_SIZE;
 
         int now_block_num = SUPER_BLOCK_INDEX + GROUP_BLOCK_SIZE;
-        GroupBlock* temp_block = group_block;
+        GroupBlock *temp_block = group_block;
         while (block_num > 0)
         {
             if (block_num > GROUP_BLOCK_SIZE)
@@ -374,7 +379,7 @@ public:
                 block_num -= GROUP_BLOCK_SIZE;
             }
 
-            if(block_num <= GROUP_BLOCK_SIZE && block_num > 0)
+            if (block_num <= GROUP_BLOCK_SIZE && block_num > 0)
             {
                 temp_block->set_next_group_block(new GroupBlock(now_block_num, block_num));
                 temp_block = temp_block->next_group_block;
@@ -400,16 +405,39 @@ public:
 
     /*
     * 比如说内存调用我的函数，要求放入一个文件
-    
+
     */
 
     // 放入文件函数
     void save_file(char *file_content)
     {
-        //解析文件名称
+        // 计算文件内容长度和所需块数
+        int content_length = strlen(file_content);
+        int required_blocks = (content_length + 39) / 40; // 向上取整
 
-        // 根据文件内容大小给他分配盘块
+        // 根据所需块数为文件分配磁盘块
+        for (int i = 0; i < required_blocks; ++i)
+        {
+            int block_number = diskManager.allocateBlock();
 
+            if (block_number == -1)
+            {
+                std::cout << "not enough disk space!" << std::endl;
+                return;
+            }
+
+            // 获取并设置磁盘块内容
+            DiskBlock *block = diskManager.get_block(block_number);
+            if (block)
+            {
+                // 从file_content适当位置开始复制
+                strncpy(block->content, file_content + i * 40, 40);
+                block->allocated = true; // 设置为已分配
+
+                // 更新文件分配表，将对应的块标记为已分配
+                file_allocation_table[block_number] = true; // 假设file_allocation_table是DiskManager的成员变量
+            }
+        }
     }
 
     /**
@@ -417,15 +445,52 @@ public:
      */
 
     // 取出文件函数
-
     // 内存系统要求兑换分区存入内容,传入一个块的内容，同时传入块号
+    void store_content_in_exchange_area(const std::string &content, int block_number)
+    {
+        DiskBlock *exchange_block = disk.get_block(block_number);
+        if (exchange_block)
+        {
+            strncpy(exchange_block->content, content.c_str(), 40); // 假设每个磁盘块的大小为40个字符
+            exchange_block->allocated = true;                      // 设置为已分配（如果需要）
+        }
+    }
 
     // 内存系统要求向兑换分区存入内容,传入n个块的内容，同时传入块号
+    void store_contents_in_exchange_area(const std::vector<std::string> &contents, int start_block_number)
+    {
+        int num_blocks = contents.size();
+        for (int i = 0; i < num_blocks; ++i)
+        {
+            store_content_in_exchange_area(contents[i], start_block_number + i);
+        }
+    }
 
     // 内存系统要求从兑换分区取出内容,取出一个块的内容，同时取回块号
+    std::pair<std::string, int> retrieve_content_from_exchange_area(int block_number)
+    {
+        DiskBlock *exchange_block = disk.get_block(block_number);
+        if (exchange_block && exchange_block->allocated)
+        {
+            return {std::string(exchange_block->content, 40), block_number}; // 返回块内容和块号
+        }
+        return {"", -1}; // 返回空内容和无效块号
+    }
 
     // 内存系统要求从兑换分区取出内容,取出n个块的内容，同时取回块号
-        
+    std::vector<std::pair<std::string, int>> retrieve_contents_from_exchange_area(int start_block_number, int num_blocks)
+    {
+        std::vector<std::pair<std::string, int>> contents;
+        for (int i = 0; i < num_blocks; ++i)
+        {
+            auto [content, block_num] = retrieve_content_from_exchange_area(start_block_number + i);
+            if (!content.empty())
+            {
+                contents.push_back({content, block_num});
+            }
+        }
+        return contents;
+    }
 };
 
 // int main()
