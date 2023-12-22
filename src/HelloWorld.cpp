@@ -11,16 +11,16 @@ HelloWorld::HelloWorld(QWidget *parent)
     // 设置窗口大小
     this->resize(1200, 800);
     this->setAutoFillBackground(true);
-    // 设置窗口背景
-    QPalette palette;
-    palette.setBrush(QPalette::Window,QBrush(QPixmap("icon/background.jpeg").scaled(this->size())));
-    this->setPalette(palette);
+    // // 设置窗口背景
+    // QPalette palette;
+    // palette.setBrush(QPalette::Window,QBrush(QPixmap("icon/background.jpeg").scaled(this->size())));
+    // this->setPalette(palette);
 
-    // 添加一个按钮
-    QPushButton *btn = new QPushButton("按钮", this);
+    // // 添加一个按钮
+    // QPushButton *btn = new QPushButton("按钮", this);
 
-    // 设置按钮位置
-    btn->move(100, 100);
+    // // 设置按钮位置
+    // btn->move(100, 100);
 
     // // 菜单栏
     // QMenuBar *menuBar = new QMenuBar(this);
@@ -36,18 +36,16 @@ HelloWorld::HelloWorld(QWidget *parent)
     // QAction *act2= new QAction("另存为");
     // QAction *act3=new QAction("关闭");
 
-    QAction* begin_action = new QAction(QIcon("icon/WLOGO.png"), "Action", this);
+    // QAction* begin_action = new QAction(QIcon("icon/WLOGO.png"), "Action", this);
     // menu1->addAction(act1);
     // menu1->addAction (act2);
     // menu1->addAction(act3);
 
-    // 底部工具栏
-    QToolBar *toolBar = new QToolBar(this);
-    this->addToolBar(Qt::BottomToolBarArea,toolBar);
-    toolBar->setMovable(false);
-    toolBar->addAction(begin_action);
-
-
+    // // 底部工具栏
+    // QToolBar *toolBar = new QToolBar(this);
+    // this->addToolBar(Qt::BottomToolBarArea,toolBar);
+    // toolBar->setMovable(false);
+    // toolBar->addAction(begin_action);
 
 }
 
