@@ -2,15 +2,13 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-24 01:35:10
+ * @LastEditTime : 2023-12-24 02:59:12
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
  * Copyright (c) 2023 by NieFire, All Rights Reserved.
  */
 #include "disk.h"
-
-
 /*
 建立一个40KB大小的文件，作为模拟磁盘。
 将其逻辑划分为1024块，每块大小40B。
@@ -314,31 +312,23 @@ void DiskManager::set_super_block_content(char *content)
 void DiskManager::save_file(const char *file_content)
 {
     // 计算文件内容长度和所需块数
-    int content_length = strlen(file_content);
-    int required_blocks = (content_length + 39) / 40; // 向上取整
+    int file_content_length = strlen(file_content);
+    int file_block_num = file_content_length / disk.get_block_size() + 1;
 
-    // 根据所需块数为文件分配磁盘块
-    for (int i = 0; i < required_blocks; ++i)
+    // 检查磁盘空间是否足够
+    if (file_block_num > disk.get_file_area())
     {
-        int block_number = allocate_block();
+        std::cout << "磁盘空间不足" << std::endl;
+        return;
+    }
 
-        if (block_number == -1)
-        {
-            std::cout << "not enough disk space!" << std::endl;
-            return;
-        }
+    // 分配块
+    int *block_ids = allocate_blocks(file_block_num);
 
-        // 获取并设置磁盘块内容
-        DiskBlock *block = get_block(block_number);
-        if (block)
-        {
-            // 从file_content适当位置开始复制
-            strncpy(block->get_content(), file_content + i * 40, 40);
-            block->set_status(ALLOCATED); // 设置为已分配
-
-            // 更新文件分配表，将对应的块标记为已分配
-            file_allocation_table[block_number] = true; // 假设file_allocation_table是DiskManager的成员变量
-        }
+    // 将文件内容写入块
+    for (int i = 0; i < file_block_num; i++)
+    {
+        disk.get_block(block_ids[i])->set_content((char *)file_content + i * disk.get_block_size());
     }
 }
 
@@ -385,7 +375,85 @@ std::vector<std::pair<std::string, int>> DiskManager::retrieve_contents_from_exc
     return contents;
 }
 
+void DiskManager::str()
+{
+    // 输出成组链块分组情况
+    GroupBlock *temp_block = group_block_head;
+    int i = 1;
+    while (temp_block != nullptr)
+    {
+        std::cout << "第" << i << "组从";
+        std::cout << temp_block->block_numbers[0] << "到" << temp_block->block_numbers[temp_block->block_numbers.size() - 1] << "块";
+        std::cout << "\n";
+        i++;
+        temp_block = temp_block->next_group_block;
+    }
+}
 
+// 从成组链块中分配n个块
+int *DiskManager::allocate_blocks(int n)
+{
+    // 从头指针指向的块开始分配
+    GroupBlock *temp_block = group_block_head;
+    int *block_ids = new int[n];
+    int i = 0;
+    while (temp_block != nullptr)
+    {
+        // 如果该成组链块的块数大于等于n，直接分配
+        if (temp_block->block_numbers.size() >= n)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                block_ids[i] = temp_block->block_numbers[j];
+                i++;
+            }
+            // 删除分配的块
+            delete_blocks_in_group_block(temp_block, n);
+            return block_ids;
+        }
+
+        // 如果该成组链块的块数小于n，将该成组链块的块分配完
+
+        for (int j = 0; j < temp_block->block_numbers.size(); j++)
+        {
+            block_ids[i] = temp_block->block_numbers[j];
+            i++;
+        }
+        // 删除该成组链块
+        delete_group_block(temp_block);
+        n -= temp_block->block_numbers.size();
+    }
+}
+
+// 删除某个成组链块，传入的参数是该成组链块的指针
+void DiskManager::delete_group_block(GroupBlock *group_block)
+{
+    // 如果该成组链块是头指针，头指针要指向下一个成组链块
+    if (group_block == group_block_head)
+    {
+        group_block_head = group_block->next_group_block;
+        delete group_block;
+        return;
+    }
+
+    // 如果该成组链块不是头指针
+    group_block->prev_group_block->next_group_block = group_block->next_group_block;
+    group_block->next_group_block->prev_group_block = group_block->prev_group_block;
+    delete group_block;
+    return;
+}
+
+// 删除某个成组链块的前n个块
+void DiskManager::delete_blocks_in_group_block(GroupBlock *group_block, int n)
+{
+    if (group_block->block_numbers.size() < n)
+    {
+        std::cout << "删除块数大于成组链块块数" << std::endl;
+        return;
+    }
+
+    group_block->block_numbers.erase(group_block->block_numbers.begin(), group_block->block_numbers.begin() + n);
+}
 // int main()
 // {
 //     DiskManager disk_manager;

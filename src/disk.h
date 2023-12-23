@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <intrin.h>
+#include <algorithm>
 
 // 磁盘块状态枚举
 enum DiskBlockStatus
@@ -169,10 +170,10 @@ public:
  */
 class DiskManager
 {
-private:
+public:
     // 磁盘
     Disk disk;
-
+private:
     // 超级块索引
     const int SUPER_BLOCK_INDEX = 0;
 
@@ -189,6 +190,9 @@ private:
     struct GroupBlock
     {
         std::vector<int> block_numbers;
+        // 前一个成组链块，便于删除
+        GroupBlock *prev_group_block;
+        // 下一个成组链块
         GroupBlock *next_group_block;
 
         // 初始化
@@ -231,4 +235,16 @@ public:
 
     // 从兑换区的n个块读取内容
     std::vector<std::pair<std::string, int>> retrieve_contents_from_exchange_area(int start_block_number, int num_blocks);
+
+
+    // 输出调试信息
+    void str();
+
+    void allocate_blocks(int block_id, int n);
+
+    int* allocate_blocks(int n);
+
+    void delete_group_block(GroupBlock *group_block);
+
+    void delete_blocks_in_group_block(GroupBlock *group_block, int n);
 };
