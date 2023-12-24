@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-24 20:30:43
+ * @LastEditTime : 2023-12-24 23:21:13
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -48,6 +48,11 @@ DiskBlock::DiskBlock(int size, int number)
     this->number = number;
     this->status = FREE;
     this->content = new char[size];
+    // 初始化磁盘块内容, 用空字符填充
+    for (int i = 0; i < size; i++)
+    {
+        content[i] = '\0';
+    }
 }
 
 void DiskBlock::set_content(char *content)
@@ -232,13 +237,12 @@ void DiskManager::GroupBlock::set_next_group_block(GroupBlock *next_group_block)
  */
 DiskManager::DiskManager()
 {
+    load_info_from_txt();
     init_disk();
 }
 
 void DiskManager::init_disk()
 {
-    // todo 初始化文件分配表为所有块都是未分配的
-
     DiskBuilder disk_builder;
     disk = disk_builder.set_disk_size(40 * 1024)
                .set_block_size(40)
@@ -246,14 +250,16 @@ void DiskManager::init_disk()
                .set_exchange_area_block_num(124)
                .build();
 
-    // 指定第一个块为超级块
-    super_block = disk.get_block(SUPER_BLOCK_INDEX);
-
     // 初始化成组链块,将文件区所有块分为成组链块
-    group_block_head = new GroupBlock(SUPER_BLOCK_INDEX, GROUP_BLOCK_SIZE);
+
+    // 首先初始化头指针
+    group_block_head = new GroupBlock(0, GROUP_BLOCK_SIZE);
+
+    // 计算成组链块数量(不包括头指针)
     int block_num = disk.get_file_area() - GROUP_BLOCK_SIZE;
 
-    int now_block_num = SUPER_BLOCK_INDEX + GROUP_BLOCK_SIZE;
+    // 已经初始化的块数
+    int now_block_num = GROUP_BLOCK_SIZE;
     GroupBlock *temp_block = group_block_head;
     while (block_num > 0)
     {
@@ -281,40 +287,50 @@ void DiskManager::init_disk()
         exchange_area_queue.push(i);
     }
 
-    // todo 设置超级块内容
+    // 读取fat表，计算fat表盘块号
+    // todo 记得回来做向上取整
+    int fat_size = disk.get_file_area() * sizeof(int) * 2 / disk.get_block_size();
+
+    // 给fat表分配盘块（默认的）
+    fat_block_numbers = allocate_file_area_blocks(fat_size);
+
+    // 读取fat表
+    load_fat();
 }
 
-char *DiskManager::get_super_block_content() const
+int DiskManager::save_file(const char *file_content)
 {
-    return super_block->get_content();
-}
+    char *temp_content = new char[strlen(file_content) + 1];
+    strcpy(temp_content, file_content);
 
-void DiskManager::set_super_block_content(char *content)
-{
-    super_block->set_content(content);
-}
-
-void DiskManager::save_file(const char *file_content)
-{
     // 计算文件内容长度和所需块数
-    int file_content_length = strlen(file_content);
+    int file_content_length = strlen(temp_content);
     int file_block_num = file_content_length / disk.get_block_size() + 1;
 
     // 检查磁盘空间是否足够
     if (file_block_num > disk.get_file_area())
     {
         std::cout << "磁盘空间不足" << std::endl;
-        return;
+        return -1;
     }
 
     // 分配块
     std::vector<int> block_ids = allocate_file_area_blocks(file_block_num);
 
     // 将文件内容写入块
-    for (int i = 0; i < file_block_num; i++)
+    write_blocks(block_ids, temp_content);
+
+    // 更新fat表
+    for (int i = 0; i < block_ids.size() - 1; i++)
     {
-        disk.get_block(block_ids[i])->set_content((char *)file_content + i * disk.get_block_size());
+        file_allocation_table.insert(std::pair<int, int>(block_ids[i], block_ids[i + 1]));
     }
+    file_allocation_table.insert(std::pair<int, int>(block_ids[block_ids.size() - 1], -1));
+
+    // todo 通知内存系统将更新后的fat表写入内存
+
+    // 返回文件起始盘块号
+    return block_ids[0];
 }
 
 void DiskManager::str()
@@ -354,22 +370,22 @@ int DiskManager::allocate_exchange_area_blocks()
 std::vector<int> DiskManager::allocate_file_area_blocks(int n)
 {
     std::vector<int> block_ids(n);
-
+    int need_num = n;
     int i = 0;
     while (i < n)
     {
         GroupBlock *temp_block = group_block_head;
 
         // 如果该成组链块的块数大于等于n，直接分配
-        if (temp_block->block_numbers.size() >= n)
+        if (temp_block->block_numbers.size() >= need_num)
         {
-            for (int j = 0; j < n; j++)
+            for (int j = 0; j < need_num; j++)
             {
                 block_ids[i] = temp_block->block_numbers[j];
                 i++;
             }
             // 删除分配的块
-            delete_blocks_in_group_block(n);
+            delete_blocks_in_group_block(need_num);
             return block_ids;
         }
 
@@ -380,7 +396,7 @@ std::vector<int> DiskManager::allocate_file_area_blocks(int n)
             i++;
         }
 
-        n -= temp_block->block_numbers.size();
+        need_num -= temp_block->block_numbers.size();
 
         // 删除该成组链块
         delete_group_block();
@@ -459,6 +475,7 @@ char *DiskManager::read_block(int block_number)
 // 向多个盘块写入内容
 void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
 {
+    std::cout << "content: " << content << std::endl;
     if (strlen(content) > disk.get_block_size() * block_numbers.size())
     {
         std::cout << "盘块大小不足" << std::endl;
@@ -468,13 +485,14 @@ void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
     char *temp_content = new char[disk.get_block_size()];
 
     int i = 0;
-    
-    while(strlen(content) > 0){
+
+    while (strlen(content) > 0)
+    {
         strncpy(temp_content, content, disk.get_block_size() - 1);
         temp_content[disk.get_block_size() - 1] = '\0';
         write_block(block_numbers[i], temp_content);
         block_numbers.pop_back();
-        if(strlen(content) > disk.get_block_size() - 1)
+        if (strlen(content) > disk.get_block_size() - 1)
         {
             content += disk.get_block_size() - 1;
         }
@@ -497,11 +515,196 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
     return content;
 }
 
+// 存入文件信息
+void DiskManager::save_file_info(const char *file_info)
+{
+    int begin_block_number = save_file(file_info);
+    file_info_block_number = begin_block_number;
+}
+
+// 存入目录信息
+void DiskManager::save_dir_info(const char *dir_info)
+{
+    int begin_block_number = save_file(dir_info);
+    dir_info_block_number = begin_block_number;
+}
+
+// 获取文件信息起始盘块号
+int DiskManager::get_file_info_block_number()
+{
+    return file_info_block_number;
+}
+
+// 获取目录信息起始盘块号
+int DiskManager::get_dir_info_block_number()
+{
+    return dir_info_block_number;
+}
+
+// 获取fat盘块号
+std::vector<int> DiskManager::get_fat_block_numbers()
+{
+    return fat_block_numbers;
+}
+
+// fat序列化
+void DiskManager::save_fat()
+{
+    // 计算fat表大小
+    int fat_size = file_allocation_table.size() * (sizeof(int) * 2 + 3);
+    char *fat_content = new char[fat_size+1];
+    fat_content[0] = '\0';
+
+    // 将fat表序列化，以大括号分割，每一对key-value之间用空格分割
+    for (const auto &pair : file_allocation_table)
+    {
+        char temp[sizeof(int) * 2 + 3];
+        sprintf(temp, "{%d %d}", pair.first, pair.second);
+        strncat(fat_content, temp, sizeof(int) * 2 + 3);
+    }
+    // 添加结束符
+    fat_content[fat_size] = '\0';
+
+    // 将fat表写入磁盘
+    write_blocks(fat_block_numbers, fat_content);
+
+    // 释放内存
+    delete[] fat_content;
+}
+
+// fat反序列化
+void DiskManager::load_fat()
+{
+    // 读取fat表
+    char *fat_content = read_blocks(fat_block_numbers);
+
+    // 清空fat表
+    file_allocation_table.clear();
+
+    // 将fat表反序列化
+    int i = 0;
+    while (true)
+    {
+        // 跳过空格
+        while (fat_content[i] == ' ')
+        {
+            i++;
+        }
+
+        // 如果遇到结束符，就退出
+        if (fat_content[i] == '\0')
+        {
+            break;
+        }
+
+        // 读取key
+        int key = 0;
+        while (fat_content[i] != ' ')
+        {
+            key = key * 10 + fat_content[i] - '0';
+            i++;
+        }
+
+        // 跳过空格
+        while (fat_content[i] == ' ')
+        {
+            i++;
+        }
+
+        // 读取value
+        int value = 0;
+        while (fat_content[i] != '}')
+        {
+            value = value * 10 + fat_content[i] - '0';
+            i++;
+        }
+
+        // 跳过}
+        i++;
+
+        // 将key-value对插入fat表
+        file_allocation_table.insert(std::pair<int, int>(key, value));
+    }
+}
+
+// 获取文件分配表
+std::map<int, int> DiskManager::get_file_allocation_table()
+{
+    return file_allocation_table;
+}
+
+// 读取超级块
+char* DiskManager::load_super_block()
+{
+    // 读取超级块内容，将超级块视为超级文件，从fat表第一条记录中开始读取
+    // 先根据fat表确定要多大的缓冲区
+    int super_block_size = 0;
+    int temp_block_number = file_allocation_table.begin()->first;
+    while (temp_block_number != -1)
+    {
+        super_block_size += disk.get_block_size();
+        temp_block_number = file_allocation_table[temp_block_number];
+    }
+
+    // 申请缓冲区
+    char *super_block_content = new char[super_block_size + 1];
+
+    // 读取超级块内容
+    temp_block_number = file_allocation_table.begin()->first;
+    int i = 0;
+    while (temp_block_number != -1)
+    {
+        strncpy(super_block_content + i * disk.get_block_size(), read_block(temp_block_number), disk.get_block_size() - 1);
+        temp_block_number = file_allocation_table[temp_block_number];
+        i++;
+    }
+
+    // 添加结束符
+    super_block_content[super_block_size] = '\0';
+
+    return super_block_content;
+}
+
+// 模拟用持久化
+void DiskManager::save_info_in_txt()
+{
+    // 将磁盘信息写入txt
+    // 如果没有文件就创建，如果有就清空
+    std::ofstream disk_info_file("E:/cpp/vscodecpp/disk_info.txt", std::ios::out | std::ios::trunc | std::ios::binary);
+    for(int i = 0; i < disk.get_file_area(); i++)
+    {
+        disk_info_file.write(disk.get_block(i)->get_content(), disk.get_block_size());
+        disk_info_file.write("\n", 1);
+    }
+
+}
+
+// 模拟用加载
+// void load_info_from_txt();
+void DiskManager::load_info_from_txt()
+{
+    // 从txt中读取磁盘信息
+    std::ifstream disk_info_file("E:/cpp/vscodecpp/disk_info.txt", std::ios::in | std::ios::trunc | std::ios::binary);
+    if (!disk_info_file)
+    {
+        std::cout << "打开文件失败" << std::endl;
+        return;
+    }
+
+    char* temp_content = new char[disk.get_block_size() + 1];
+
+    // 读取文件内容
+    for (int i = 0; i < disk.get_file_area(); i++)
+    {
+        disk_info_file.read(temp_content, disk.get_block_size());
+        temp_content[disk.get_block_size()] = '\0';
+        disk.get_block(i)->set_content(temp_content);
+    }
+}
+
 // int main()
 // {
 //     DiskManager disk_manager;
-
-//     disk_manager.init_disk();
 
 //     disk_manager.disk_str();
 
@@ -510,7 +713,7 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
 //     // 开始测试
 //     std::cout << "开始测试" << std::endl;
 
-//     //测试分配块
+//     // 测试分配块
 //     std::cout << "测试分配块" << std::endl;
 //     std::vector<int> block_ids_1 = disk_manager.allocate_file_area_blocks(10);
 //     for (int i = 0; i < 10; i++)
@@ -532,12 +735,13 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
 //     char *content_1 = new char[381];
 //     const char chars[] = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 ";
 //     int char_index = 0;
-    
-//     for (int i = 0; i < 380; i++) {
+
+//     for (int i = 0; i < 380; i++)
+//     {
 //         content_1[i] = chars[char_index];
 //         char_index = (char_index + 1) % 65;
 //     }
-    
+
 //     content_1[380] = '\0';
 //     std::cout << "content_1的长度为：" << strlen(content_1) << std::endl;
 
@@ -545,19 +749,47 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
 
 //     disk_manager.write_blocks(block_ids_1, content_1);
 
+//     // 测试文件存储
+//     std::cout << "测试文件存储" << std::endl;
+//     disk_manager.save_file(content_1);
+
 //     // 显示写入结果
 //     std::cout << "显示写入结果" << std::endl;
 //     std::cout << disk_manager.read_blocks(block_ids_1) << std::endl;
 
-//     // // 释放block_ids_1
-//     // std::cout << "释放block_ids_1" << std::endl;
-//     // disk_manager.free_blocks(block_ids_1, 10);
-//     // disk_manager.str();
+//     // 测试文件分配表
+//     disk_manager.save_fat();
 
-//     // // 释放block_ids_2
-//     // std::cout << "释放block_ids_2" << std::endl;
-//     // disk_manager.free_blocks(block_ids_2, 200);
-//     // disk_manager.str();
+//     // 查看fat表
+//     std::cout << "查看fat表的存储结果" << std::endl;
+//     std::cout << disk_manager.read_blocks(disk_manager.get_fat_block_numbers()) << std::endl;
+
+//     // 把fat表清空
+//     disk_manager.get_file_allocation_table().clear();
+
+//     // 重新读取fat表
+//     disk_manager.load_fat();
+
+//     // 对比fat表是否一致
+//     std::cout << "对比fat表是否一致" << std::endl;
+//     std::cout << disk_manager.read_blocks(disk_manager.get_fat_block_numbers()) << std::endl;
+
+//     // 释放block_ids_1
+//     std::cout << "释放block_ids_1" << std::endl;
+//     disk_manager.free_blocks(block_ids_1);
+//     disk_manager.str();
+
+//     // 释放block_ids_2
+//     std::cout << "释放block_ids_2" << std::endl;
+//     disk_manager.free_blocks(block_ids_2);
+//     disk_manager.str();
+
+//     disk_manager.save_info_in_txt();
+
+//     // disk_manager.load_info_from_txt();
+
+//     // std::cout << "查看fat表的存储结果" << std::endl;
+//     // std::cout << disk_manager.read_blocks(disk_manager.get_fat_block_numbers()) << std::endl;
 
 //     return 0;
 // }

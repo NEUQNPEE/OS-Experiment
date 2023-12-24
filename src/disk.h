@@ -1,13 +1,3 @@
-/*
- * @Author       : NieFire planet_class@foxmail.com
- * @Date         : 2023-12-22 19:05:52
- * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-24 20:30:55
- * @FilePath     : \OS-Experiment\src\disk.h
- * @Description  : 
- * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
- * Copyright (c) 2023 by NieFire, All Rights Reserved. 
- */
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -174,11 +164,6 @@ class DiskManager
 private:
     // 磁盘
     Disk disk;
-    // 超级块索引
-    const int SUPER_BLOCK_INDEX = 0;
-
-    // 超级块
-    DiskBlock *super_block;
 
     // 成组链块大小
     const int GROUP_BLOCK_SIZE = 128;
@@ -210,8 +195,18 @@ private:
 
     // 兑换区用的循环队列，用于存储空闲块
     std::queue<int> exchange_area_queue;
-    
 
+    // 文件信息起始盘块号
+    int file_info_block_number;
+
+    // 目录信息起始盘块号
+    int dir_info_block_number;
+
+    // fat盘块号
+    std::vector<int> fat_block_numbers;
+
+    // tip: 根据计算，900块所需的fat表上限为180块，但这也太扯淡了……
+    
 public:
     // 构造函数
     DiskManager();
@@ -225,8 +220,8 @@ public:
     // 设置超级块内容
     void set_super_block_content(char *content);
 
-    // 保存文件
-    void save_file(const char *file_content);
+    // 保存文件, 返回该文件起始盘块号
+    int save_file(const char *file_content);
 
     // 输出调试信息
     void str();
@@ -260,4 +255,37 @@ public:
 
     // 从多个盘块读取内容
     char *read_blocks(std::vector<int> block_numbers);
+
+    // 存入文件信息
+    void save_file_info(const char *file_info);
+
+    // 存入目录信息
+    void save_dir_info(const char *dir_info);
+
+    // 获取文件信息起始盘块号
+    int get_file_info_block_number();
+
+    // 获取目录信息起始盘块号
+    int get_dir_info_block_number();
+
+    // 获取fat盘块号
+    std::vector<int> get_fat_block_numbers();
+
+    // fat序列化
+    void save_fat();
+
+    // fat反序列化
+    void load_fat();
+
+    // 获取文件分配表
+    std::map<int, int> get_file_allocation_table();
+
+    // 读取超级块
+    char* load_super_block();
+
+    // 模拟用持久化
+    void save_info_in_txt();
+
+    // 模拟用加载
+    void load_info_from_txt();
 };
