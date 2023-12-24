@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-24 02:59:12
+ * @LastEditTime : 2023-12-24 20:30:43
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -47,18 +47,19 @@ DiskBlock::DiskBlock(int size, int number)
     this->size = size;
     this->number = number;
     this->status = FREE;
+    this->content = new char[size];
 }
 
 void DiskBlock::set_content(char *content)
 {
     // 检查磁盘块大小是否足够
-    if (sizeof(content) > size)
+    if (strlen(content) > size)
     {
         std::cout << "磁盘块大小不足" << std::endl;
         return;
     }
 
-    this->content = content;
+    strcpy(this->content, content);
 }
 
 char *DiskBlock::get_content() const
@@ -98,9 +99,6 @@ int Disk::get_disk_size()
 void Disk::set_block_size(int size)
 {
     block_size = size;
-
-    // 已知磁盘空间大小，磁盘块大小，计算磁盘块数
-    set_block_num(disk_space_size / block_size);
 }
 
 int Disk::get_block_size()
@@ -128,15 +126,6 @@ int Disk::get_file_area()
     return file_area_block_size;
 }
 
-void Disk::set_file_area_blocks()
-{
-    for (int i = 0; i < file_area_block_size; i++)
-    {
-        DiskBlock *block = &blocks[i];
-        file_area_blocks.push_back(block);
-    }
-}
-
 void Disk::set_exchange_area(int size)
 {
     exchange_area_block_size = size;
@@ -147,15 +136,6 @@ int Disk::get_exchange_area()
     return exchange_area_block_size;
 }
 
-void Disk::set_exchange_area_blocks()
-{
-    for (int i = file_area_block_size; i < file_area_block_size + exchange_area_block_size; i++)
-    {
-        DiskBlock *block = &blocks[i];
-        exchange_area_blocks.push_back(block);
-    }
-}
-
 void Disk::init_blocks()
 {
     for (int i = 0; i < block_num; i++)
@@ -163,9 +143,6 @@ void Disk::init_blocks()
         DiskBlock block(block_size, i);
         blocks.push_back(block);
     }
-
-    set_file_area_blocks();
-    set_exchange_area_blocks();
 }
 
 DiskBlock *Disk::get_block(int n)
@@ -217,6 +194,10 @@ DiskBuilder &DiskBuilder::init_blocks()
 
 Disk DiskBuilder::build()
 {
+    // 已知磁盘空间大小，磁盘块大小，计算磁盘块数
+    disk.set_block_num(disk.get_disk_size() / disk.get_block_size());
+
+    init_blocks();
     return disk;
 }
 
@@ -256,24 +237,21 @@ DiskManager::DiskManager()
 
 void DiskManager::init_disk()
 {
-    // 初始化文件分配表为所有块都是未分配的
-    int total_blocks = disk.get_block_num();
-    file_allocation_table.resize(total_blocks, false); // 所有块初始化为false，表示未分配
+    // todo 初始化文件分配表为所有块都是未分配的
 
     DiskBuilder disk_builder;
     disk = disk_builder.set_disk_size(40 * 1024)
                .set_block_size(40)
                .set_file_area_block_num(900)
                .set_exchange_area_block_num(124)
-               .init_blocks()
                .build();
 
     // 指定第一个块为超级块
     super_block = disk.get_block(SUPER_BLOCK_INDEX);
 
-    // 初始化成组链块
+    // 初始化成组链块,将文件区所有块分为成组链块
     group_block_head = new GroupBlock(SUPER_BLOCK_INDEX, GROUP_BLOCK_SIZE);
-    int block_num = disk.get_block_num() - GROUP_BLOCK_SIZE;
+    int block_num = disk.get_file_area() - GROUP_BLOCK_SIZE;
 
     int now_block_num = SUPER_BLOCK_INDEX + GROUP_BLOCK_SIZE;
     GroupBlock *temp_block = group_block_head;
@@ -296,10 +274,17 @@ void DiskManager::init_disk()
         }
     }
 
+    // 初始化兑换区循环队列
+    exchange_area_queue = std::queue<int>();
+    for (int i = disk.get_file_area(); i < disk.get_file_area() + disk.get_exchange_area(); i++)
+    {
+        exchange_area_queue.push(i);
+    }
+
     // todo 设置超级块内容
 }
 
-char* DiskManager::get_super_block_content() const
+char *DiskManager::get_super_block_content() const
 {
     return super_block->get_content();
 }
@@ -323,56 +308,13 @@ void DiskManager::save_file(const char *file_content)
     }
 
     // 分配块
-    int *block_ids = allocate_blocks(file_block_num);
+    std::vector<int> block_ids = allocate_file_area_blocks(file_block_num);
 
     // 将文件内容写入块
     for (int i = 0; i < file_block_num; i++)
     {
         disk.get_block(block_ids[i])->set_content((char *)file_content + i * disk.get_block_size());
     }
-}
-
-void DiskManager::store_content_in_exchange_area(const std::string &content, int block_number)
-{
-    DiskBlock *exchange_block = disk.get_block(block_number);
-    if (exchange_block)
-    {
-        strncpy(exchange_block->get_content(), content.c_str(), 40); // 假设每个磁盘块的大小为40个字符
-        exchange_block->set_status(ALLOCATED);                        // 设置为已分配（如果需要）
-    }
-}
-
-void DiskManager::store_contents_in_exchange_area(const std::vector<std::string> &contents, int start_block_number)
-{
-    int num_blocks = contents.size();
-    for (int i = 0; i < num_blocks; ++i)
-    {
-        store_content_in_exchange_area(contents[i], start_block_number + i);
-    }
-}
-
-std::pair<std::string, int> DiskManager::retrieve_content_from_exchange_area(int block_number)
-{
-    DiskBlock *exchange_block = disk.get_block(block_number);
-    if (exchange_block && exchange_block->get_status() == ALLOCATED)
-    {
-        return {std::string(exchange_block->get_content(), 40), block_number}; // 返回块内容和块号
-    }
-    return {"", -1}; // 返回空内容和无效块号
-}
-
-std::vector<std::pair<std::string, int>> DiskManager::retrieve_contents_from_exchange_area(int start_block_number, int num_blocks)
-{
-    std::vector<std::pair<std::string, int>> contents;
-    for (int i = 0; i < num_blocks; ++i)
-    {
-        auto [content, block_num] = retrieve_content_from_exchange_area(start_block_number + i);
-        if (!content.empty())
-        {
-            contents.push_back({content, block_num});
-        }
-    }
-    return contents;
 }
 
 void DiskManager::str()
@@ -382,23 +324,42 @@ void DiskManager::str()
     int i = 1;
     while (temp_block != nullptr)
     {
-        std::cout << "第" << i << "组从";
-        std::cout << temp_block->block_numbers[0] << "到" << temp_block->block_numbers[temp_block->block_numbers.size() - 1] << "块";
-        std::cout << "\n";
+        std::cout << "第" << i << "组成组链块：" << std::endl;
+        for (int j = 0; j < temp_block->block_numbers.size(); j++)
+        {
+            std::cout << temp_block->block_numbers[j] << " ";
+        }
+        std::cout << std::endl;
+
         i++;
         temp_block = temp_block->next_group_block;
     }
 }
 
-// 从成组链块中分配n个块
-int *DiskManager::allocate_blocks(int n)
+void DiskManager::disk_str()
 {
-    // 从头指针指向的块开始分配
-    GroupBlock *temp_block = group_block_head;
-    int *block_ids = new int[n];
+    disk.str();
+}
+
+// 兑换区分配盘块, 返回盘块号
+int DiskManager::allocate_exchange_area_blocks()
+{
+    // 直接去队列头取
+    int block_number = exchange_area_queue.front();
+    exchange_area_queue.pop();
+    return block_number;
+}
+
+// 从成组链块中分配n个块
+std::vector<int> DiskManager::allocate_file_area_blocks(int n)
+{
+    std::vector<int> block_ids(n);
+
     int i = 0;
-    while (temp_block != nullptr)
+    while (i < n)
     {
+        GroupBlock *temp_block = group_block_head;
+
         // 如果该成组链块的块数大于等于n，直接分配
         if (temp_block->block_numbers.size() >= n)
         {
@@ -408,59 +369,195 @@ int *DiskManager::allocate_blocks(int n)
                 i++;
             }
             // 删除分配的块
-            delete_blocks_in_group_block(temp_block, n);
+            delete_blocks_in_group_block(n);
             return block_ids;
         }
 
         // 如果该成组链块的块数小于n，将该成组链块的块分配完
-
         for (int j = 0; j < temp_block->block_numbers.size(); j++)
         {
             block_ids[i] = temp_block->block_numbers[j];
             i++;
         }
-        // 删除该成组链块
-        delete_group_block(temp_block);
+
         n -= temp_block->block_numbers.size();
+
+        // 删除该成组链块
+        delete_group_block();
     }
 }
 
-// 删除某个成组链块，传入的参数是该成组链块的指针
-void DiskManager::delete_group_block(GroupBlock *group_block)
+// 删除整个成组链块
+void DiskManager::delete_group_block()
 {
-    // 如果该成组链块是头指针，头指针要指向下一个成组链块
-    if (group_block == group_block_head)
+    GroupBlock *temp = group_block_head;
+    group_block_head = group_block_head->next_group_block;
+    delete temp;
+}
+
+// 删除前n个块
+void DiskManager::delete_blocks_in_group_block(int n)
+{
+    group_block_head->block_numbers.erase(group_block_head->block_numbers.begin(), group_block_head->block_numbers.begin() + n);
+}
+
+// 释放n个块
+void DiskManager::free_blocks(std::vector<int> block_numbers)
+{
+    // 从头指针指向的块开始释放
+    GroupBlock *temp_block = group_block_head;
+
+    int i = 0;
+    while (i < block_numbers.size())
     {
-        group_block_head = group_block->next_group_block;
-        delete group_block;
+        // 只要不满成组链块大小上限，就一直往头插入
+        while (temp_block->block_numbers.size() < GROUP_BLOCK_SIZE)
+        {
+            temp_block->block_numbers.insert(temp_block->block_numbers.begin(), block_numbers[block_numbers.size() - i - 1]);
+            i++;
+
+            // 如果块已经释放完了，就返回
+            if (i == block_numbers.size())
+            {
+                return;
+            }
+        }
+
+        // 如果满了，就新建一个成组链块
+        GroupBlock *new_group_block = new GroupBlock(block_numbers[block_numbers.size() - i - 1], 1);
+
+        // 将新建的成组链块插入到链表中
+        new_group_block->next_group_block = temp_block;
+        new_group_block->prev_group_block = temp_block->prev_group_block;
+        temp_block->prev_group_block = new_group_block;
+        group_block_head = new_group_block;
+
+        temp_block = new_group_block;
+        i++;
+    }
+}
+
+// 向某个盘块写入内容
+void DiskManager::write_block(int block_number, char *content)
+{
+    // 检查盘块大小是否足够
+    if (strlen(content) > disk.get_block_size())
+    {
+        std::cout << "盘块大小不足" << std::endl;
         return;
     }
 
-    // 如果该成组链块不是头指针
-    group_block->prev_group_block->next_group_block = group_block->next_group_block;
-    group_block->next_group_block->prev_group_block = group_block->prev_group_block;
-    delete group_block;
-    return;
+    disk.get_block(block_number)->set_content(content);
 }
 
-// 删除某个成组链块的前n个块
-void DiskManager::delete_blocks_in_group_block(GroupBlock *group_block, int n)
+// 从某个盘块读取内容
+char *DiskManager::read_block(int block_number)
 {
-    if (group_block->block_numbers.size() < n)
+    return disk.get_block(block_number)->get_content();
+}
+
+// 向多个盘块写入内容
+void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
+{
+    if (strlen(content) > disk.get_block_size() * block_numbers.size())
     {
-        std::cout << "删除块数大于成组链块块数" << std::endl;
+        std::cout << "盘块大小不足" << std::endl;
         return;
     }
 
-    group_block->block_numbers.erase(group_block->block_numbers.begin(), group_block->block_numbers.begin() + n);
+    char *temp_content = new char[disk.get_block_size()];
+
+    int i = 0;
+    
+    while(strlen(content) > 0){
+        strncpy(temp_content, content, disk.get_block_size() - 1);
+        temp_content[disk.get_block_size() - 1] = '\0';
+        write_block(block_numbers[i], temp_content);
+        block_numbers.pop_back();
+        if(strlen(content) > disk.get_block_size() - 1)
+        {
+            content += disk.get_block_size() - 1;
+        }
+        else
+        {
+            content += strlen(content);
+        }
+        i++;
+    }
 }
+
+// 从多个盘块读取内容
+char *DiskManager::read_blocks(std::vector<int> block_numbers)
+{
+    char *content = new char[disk.get_block_size() * block_numbers.size()];
+    for (int i = 0; i < block_numbers.size(); i++)
+    {
+        strncpy(content + i * disk.get_block_size(), read_block(block_numbers[i]), disk.get_block_size() - 1);
+    }
+    return content;
+}
+
 // int main()
 // {
 //     DiskManager disk_manager;
 
 //     disk_manager.init_disk();
 
-//     disk_manager.disk.str();
+//     disk_manager.disk_str();
+
+//     disk_manager.str();
+
+//     // 开始测试
+//     std::cout << "开始测试" << std::endl;
+
+//     //测试分配块
+//     std::cout << "测试分配块" << std::endl;
+//     std::vector<int> block_ids_1 = disk_manager.allocate_file_area_blocks(10);
+//     for (int i = 0; i < 10; i++)
+//     {
+//         std::cout << block_ids_1[i] << " ";
+//     }
+//     std::cout << std::endl;
+
+//     // 输出成组链块分组情况
+//     disk_manager.str();
+
+//     // 一次分配200块
+//     std::cout << "一次分配200块" << std::endl;
+//     std::vector<int> block_ids_2 = disk_manager.allocate_file_area_blocks(200);
+//     disk_manager.str();
+
+//     // 向block_ids_1写入380个字符
+//     std::cout << "向block_ids_1写入380个字符" << std::endl;
+//     char *content_1 = new char[381];
+//     const char chars[] = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789 ";
+//     int char_index = 0;
+    
+//     for (int i = 0; i < 380; i++) {
+//         content_1[i] = chars[char_index];
+//         char_index = (char_index + 1) % 65;
+//     }
+    
+//     content_1[380] = '\0';
+//     std::cout << "content_1的长度为：" << strlen(content_1) << std::endl;
+
+//     std::cout << "content_1: " << content_1 << std::endl;
+
+//     disk_manager.write_blocks(block_ids_1, content_1);
+
+//     // 显示写入结果
+//     std::cout << "显示写入结果" << std::endl;
+//     std::cout << disk_manager.read_blocks(block_ids_1) << std::endl;
+
+//     // // 释放block_ids_1
+//     // std::cout << "释放block_ids_1" << std::endl;
+//     // disk_manager.free_blocks(block_ids_1, 10);
+//     // disk_manager.str();
+
+//     // // 释放block_ids_2
+//     // std::cout << "释放block_ids_2" << std::endl;
+//     // disk_manager.free_blocks(block_ids_2, 200);
+//     // disk_manager.str();
 
 //     return 0;
 // }

@@ -1,10 +1,23 @@
+/*
+ * @Author       : NieFire planet_class@foxmail.com
+ * @Date         : 2023-12-22 19:05:52
+ * @LastEditors  : NieFire planet_class@foxmail.com
+ * @LastEditTime : 2023-12-24 20:30:55
+ * @FilePath     : \OS-Experiment\src\disk.h
+ * @Description  : 
+ * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
+ * Copyright (c) 2023 by NieFire, All Rights Reserved. 
+ */
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <intrin.h>
 #include <algorithm>
+#include <map>
+#include <queue>
 
 // 磁盘块状态枚举
 enum DiskBlockStatus
@@ -76,17 +89,11 @@ private:
     // 文件区块数
     int file_area_block_size;
 
-    // 磁盘块
-    std::vector<DiskBlock> blocks;
-
-    // 文件区磁盘块(放指针)
-    std::vector<DiskBlock *> file_area_blocks;
-
     // 兑换分区块数
     int exchange_area_block_size;
 
-    // 兑换分区磁盘块(放指针)
-    std::vector<DiskBlock *> exchange_area_blocks;
+    // 磁盘块
+    std::vector<DiskBlock> blocks;
 
 public:
     // 设置磁盘空间大小
@@ -113,17 +120,11 @@ public:
     // 获取文件区块数
     int get_file_area();
 
-    // 设置文件区磁盘块
-    void set_file_area_blocks();
-
     // 设置兑换分区块数
     void set_exchange_area(int size);
 
     // 获取兑换分区块数
     int get_exchange_area();
-
-    // 设置兑换分区磁盘块
-    void set_exchange_area_blocks();
 
     // 初始化所有磁盘块
     void init_blocks();
@@ -170,10 +171,9 @@ public:
  */
 class DiskManager
 {
-public:
+private:
     // 磁盘
     Disk disk;
-private:
     // 超级块索引
     const int SUPER_BLOCK_INDEX = 0;
 
@@ -184,7 +184,7 @@ private:
     const int GROUP_BLOCK_SIZE = 128;
 
     // 文件分配表
-    std::vector<bool> file_allocation_table;
+    std::map<int, int> file_allocation_table;
 
     // 成组链块
     struct GroupBlock
@@ -208,6 +208,10 @@ private:
     // 成组链块头
     GroupBlock *group_block_head;
 
+    // 兑换区用的循环队列，用于存储空闲块
+    std::queue<int> exchange_area_queue;
+    
+
 public:
     // 构造函数
     DiskManager();
@@ -224,27 +228,36 @@ public:
     // 保存文件
     void save_file(const char *file_content);
 
-    // 向兑换区的一个块写入内容
-    void store_content_in_exchange_area(const std::string &content, int block_number);
-
-    // 向兑换区的n个块写入内容
-    void store_contents_in_exchange_area(const std::vector<std::string> &contents, int start_block_number);
-
-    // 从兑换区的一个块读取内容
-    std::pair<std::string, int> retrieve_content_from_exchange_area(int block_number);
-
-    // 从兑换区的n个块读取内容
-    std::vector<std::pair<std::string, int>> retrieve_contents_from_exchange_area(int start_block_number, int num_blocks);
-
-
     // 输出调试信息
     void str();
 
-    void allocate_blocks(int block_id, int n);
+    // 输出磁盘的调试信息
+    void disk_str();
 
-    int* allocate_blocks(int n);
+    // 兑换区分配盘块, 返回盘块号
+    int allocate_exchange_area_blocks();
 
-    void delete_group_block(GroupBlock *group_block);
+    // 文件区分配盘块，返回盘块号
+    std::vector<int> allocate_file_area_blocks(int n);
 
-    void delete_blocks_in_group_block(GroupBlock *group_block, int n);
+    // 删除成组链块
+    void delete_group_block();
+
+    // 删除成组链块中的n个盘块
+    void delete_blocks_in_group_block(int n);
+
+    // 释放n个盘块
+    void free_blocks(std::vector<int> block_numbers);
+
+    // 向某个盘块写入内容
+    void write_block(int block_number, char *content);
+
+    // 从某个盘块读取内容
+    char *read_block(int block_number);
+
+    // 向多个盘块写入内容
+    void write_blocks(std::vector<int> block_numbers, char *content);
+
+    // 从多个盘块读取内容
+    char *read_blocks(std::vector<int> block_numbers);
 };
