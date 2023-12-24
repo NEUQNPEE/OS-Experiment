@@ -472,68 +472,68 @@ public:
 
 };
 
-int main() {
-    // 创建Init进程用于初始化
-    TaskScheduler taskScheduler;
-    InitProcess initProcess = InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS);
-    initProcess.execute();
-    // 循环等待指令输入
-    while (true) {
-        if (!processManager.readyQueue.empty()) {
-             taskScheduler.createThreads(1);
-            // taskScheduler.joinThreads();
-        }
-        int commandInput = 0;
-        std::cout << "waiting for command input..." << std::endl;
-        std::cin >> commandInput;
-        switch (static_cast<Command>(commandInput)) {
-            case Command::CREATE_PROCESS:
-                int processType;
-                std::cout << "Please input process type: " << std::endl;
-                std::cin >> processType;
-                // 创建进程
-                //todo 从QT获取directory和fileName,这里加上直接给出
-                switch (static_cast<ProcessType>(processType)) {
-                    case ProcessType::DATA_GENERATION_PROCESS: {
-                        std::string directory_input;
-                        std::string fileName_input;
-                        int pid = PIDGenerator::generatePID();
-                        DataGenerationProcess::create(
-                                &"dataGenerationProcess"[pid], pid, 1, directory_input, fileName_input);
-                        break;
-                    }
-                    case ProcessType::DATA_DELETION_PROCESS: {
-                        std::string directory_input;
-                        std::string fileName_input;
-                        int pid = PIDGenerator::generatePID();
-                        DataDeletionProcess::create(
-                                &"dataDeletionProcess"[pid], PIDGenerator::generatePID(), 1, directory_input,
-                                fileName_input);
-                        break;
-                    }
-                    case ProcessType::EXECUTION_PROCESS: {
-                        std::string directory_input;
-                        std::string fileName_input;
-                        int pid = PIDGenerator::generatePID();
-                        ExecutionProcess::create(&"executionProcess"[pid], pid, 1,
-                                                                                     directory_input, fileName_input);
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                break;
-            case Command::EXIT:
-                // 销毁进程,释放内存
-                //找到所有进程,调用destroy方法,第一个进程是init进程,最后销毁
-                for (int i = 1; i < processManager.processList.size(); i++) {
-                    processManager.processList[i]->destroy();
-                }
-                processManager.processList[0]->destroy();
-                return 0;
-            default:
-                break;
-        }
-        // taskScheduler.joinThreads();
-    }
-}
+// int main() {
+//     // 创建Init进程用于初始化
+//     TaskScheduler taskScheduler;
+//     InitProcess initProcess = InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS);
+//     initProcess.execute();
+//     // 循环等待指令输入
+//     while (true) {
+//         if (!processManager.readyQueue.empty()) {
+//              taskScheduler.createThreads(1);
+//             // taskScheduler.joinThreads();
+//         }
+//         int commandInput = 0;
+//         std::cout << "waiting for command input..." << std::endl;
+//         std::cin >> commandInput;
+//         switch (static_cast<Command>(commandInput)) {
+//             case Command::CREATE_PROCESS:
+//                 int processType;
+//                 std::cout << "Please input process type: " << std::endl;
+//                 std::cin >> processType;
+//                 // 创建进程
+//                 //todo 从QT获取directory和fileName,这里加上直接给出
+//                 switch (static_cast<ProcessType>(processType)) {
+//                     case ProcessType::DATA_GENERATION_PROCESS: {
+//                         std::string directory_input;
+//                         std::string fileName_input;
+//                         int pid = PIDGenerator::generatePID();
+//                         DataGenerationProcess::create(
+//                                 &"dataGenerationProcess"[pid], pid, 1, directory_input, fileName_input);
+//                         break;
+//                     }
+//                     case ProcessType::DATA_DELETION_PROCESS: {
+//                         std::string directory_input;
+//                         std::string fileName_input;
+//                         int pid = PIDGenerator::generatePID();
+//                         DataDeletionProcess::create(
+//                                 &"dataDeletionProcess"[pid], PIDGenerator::generatePID(), 1, directory_input,
+//                                 fileName_input);
+//                         break;
+//                     }
+//                     case ProcessType::EXECUTION_PROCESS: {
+//                         std::string directory_input;
+//                         std::string fileName_input;
+//                         int pid = PIDGenerator::generatePID();
+//                         ExecutionProcess::create(&"executionProcess"[pid], pid, 1,
+//                                                                                      directory_input, fileName_input);
+//                         break;
+//                     }
+//                     default:
+//                         break;
+//                 }
+//                 break;
+//             case Command::EXIT:
+//                 // 销毁进程,释放内存
+//                 //找到所有进程,调用destroy方法,第一个进程是init进程,最后销毁
+//                 for (int i = 1; i < processManager.processList.size(); i++) {
+//                     processManager.processList[i]->destroy();
+//                 }
+//                 processManager.processList[0]->destroy();
+//                 return 0;
+//             default:
+//                 break;
+//         }
+//         // taskScheduler.joinThreads();
+//     }
+// }
