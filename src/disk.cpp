@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-24 23:21:13
+ * @LastEditTime : 2023-12-25 00:21:26
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -366,6 +366,19 @@ int DiskManager::allocate_exchange_area_blocks()
     return block_number;
 }
 
+// 给内存系统提供的兑换区接口，传入数据，返回盘块号
+int DiskManager::exchange_one_block(char *content)
+{
+    // 先分配盘块
+    int block_number = allocate_exchange_area_blocks();
+
+    // 写入数据
+    write_block(block_number, content);
+
+    // 返回盘块号
+    return block_number;
+}
+
 // 从成组链块中分配n个块
 std::vector<int> DiskManager::allocate_file_area_blocks(int n)
 {
@@ -520,6 +533,9 @@ void DiskManager::save_file_info(const char *file_info)
 {
     int begin_block_number = save_file(file_info);
     file_info_block_number = begin_block_number;
+
+    // 更新超级块
+    update_super_block();
 }
 
 // 存入目录信息
@@ -527,6 +543,9 @@ void DiskManager::save_dir_info(const char *dir_info)
 {
     int begin_block_number = save_file(dir_info);
     dir_info_block_number = begin_block_number;
+
+    // 更新超级块
+    update_super_block();
 }
 
 // 获取文件信息起始盘块号
@@ -634,35 +653,41 @@ std::map<int, int> DiskManager::get_file_allocation_table()
 }
 
 // 读取超级块
-char* DiskManager::load_super_block()
+void DiskManager::load_super_block()
 {
-    // 读取超级块内容，将超级块视为超级文件，从fat表第一条记录中开始读取
-    // 先根据fat表确定要多大的缓冲区
-    int super_block_size = 0;
-    int temp_block_number = file_allocation_table.begin()->first;
-    while (temp_block_number != -1)
-    {
-        super_block_size += disk.get_block_size();
-        temp_block_number = file_allocation_table[temp_block_number];
-    }
-
-    // 申请缓冲区
-    char *super_block_content = new char[super_block_size + 1];
-
-    // 读取超级块内容
-    temp_block_number = file_allocation_table.begin()->first;
+    // 读取超级块内容，里面就两个int：文件信息起始盘块号和目录信息起始盘块号
+    char* super_block_content = read_block(fat_block_numbers.size() + 1);
+    // 解析超级块内容
     int i = 0;
-    while (temp_block_number != -1)
+    int file_info_block_number = 0;
+    int dir_info_block_number = 0;
+    while (super_block_content[i] != ' ')
     {
-        strncpy(super_block_content + i * disk.get_block_size(), read_block(temp_block_number), disk.get_block_size() - 1);
-        temp_block_number = file_allocation_table[temp_block_number];
+        file_info_block_number = file_info_block_number * 10 + super_block_content[i] - '0';
         i++;
     }
 
-    // 添加结束符
-    super_block_content[super_block_size] = '\0';
+    // 跳过空格
+    i++;
 
-    return super_block_content;
+    while (super_block_content[i] != '\0')
+    {
+        dir_info_block_number = dir_info_block_number * 10 + super_block_content[i] - '0';
+        i++;
+    }
+
+    // 更新文件信息起始盘块号和目录信息起始盘块号
+    this->file_info_block_number = file_info_block_number;
+    this->dir_info_block_number = dir_info_block_number;
+}
+
+// 更新超级块
+void DiskManager::update_super_block()
+{
+    // 将文件信息起始盘块号和目录信息起始盘块号写入超级块
+    char* super_block_content = new char[2 * sizeof(int) + 2];
+    sprintf(super_block_content, "%d %d", file_info_block_number, dir_info_block_number);
+    write_block(fat_block_numbers.size() + 1, super_block_content);
 }
 
 // 模拟用持久化

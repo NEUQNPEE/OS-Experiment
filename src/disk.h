@@ -214,12 +214,6 @@ public:
     // 初始化磁盘
     void init_disk();
 
-    // 获取超级块内容
-    char *get_super_block_content() const;
-
-    // 设置超级块内容
-    void set_super_block_content(char *content);
-
     // 保存文件, 返回该文件起始盘块号
     int save_file(const char *file_content);
 
@@ -231,6 +225,9 @@ public:
 
     // 兑换区分配盘块, 返回盘块号
     int allocate_exchange_area_blocks();
+
+    // 给内存系统提供的兑换区接口，传入数据，返回盘块号
+    int exchange_one_block(char *content);
 
     // 文件区分配盘块，返回盘块号
     std::vector<int> allocate_file_area_blocks(int n);
@@ -280,8 +277,11 @@ public:
     // 获取文件分配表
     std::map<int, int> get_file_allocation_table();
 
-    // 读取超级块
-    char* load_super_block();
+    // 读取超级块，超级块里面存了文件信息起始盘块号和目录信息起始盘块号
+    void load_super_block();
+
+    // 更新超级块，每次写入文件或者目录信息后都要更新超级块
+    void update_super_block();
 
     // 模拟用持久化
     void save_info_in_txt();
