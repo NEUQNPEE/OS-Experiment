@@ -169,7 +169,7 @@ private:
     const int GROUP_BLOCK_SIZE = 128;
 
     // 文件分配表
-    std::map<int, int> file_allocation_table;
+    // std::map<int, int> file_allocation_table;
 
     // 成组链块
     struct GroupBlock
@@ -268,14 +268,14 @@ public:
     // 获取fat盘块号
     std::vector<int> get_fat_block_numbers();
 
-    // fat序列化
-    void save_fat();
+    // // fat序列化
+    // void save_fat();
 
-    // fat反序列化
-    void load_fat();
+    // // fat反序列化
+    // void load_fat();
 
     // 获取文件分配表
-    std::map<int, int> get_file_allocation_table();
+    // std::map<int, int> get_file_allocation_table();
 
     // 读取超级块，超级块里面存了文件信息起始盘块号和目录信息起始盘块号
     void load_super_block();
