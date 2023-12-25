@@ -16,6 +16,37 @@ string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
+// 初始化内存及相关操作
+void initialMemory()
+{
+    //初始化内存
+    fill(memory, memory + 2560, ' ');
+    //初始化内存块
+    initialMemoryBlock();
+    // 初始化磁盘
+    disk.init_disk();
+    // 初始化FAT表
+    fat_list = disk.get_fat_block_numbers();
+    //初始化文件信息
+    file_info = getFileInfo();
+    //初始化目录信息
+    dir_info = getDirectoryInfo();
+}
+
+// 返回文件信息
+char *getFileInfo()
+{
+    int block_number = disk.get_file_info_block_number();
+    return disk.read_block(block_number);
+}
+
+// 返回目录信息
+char *getDirectoryInfo()
+{
+    int block_number = disk.get_dir_info_block_number();
+    return disk.read_block(block_number);
+}
+
 // 决定由哪八个内存块装入文件
 void initialBlock_ids()
 {
@@ -64,9 +95,18 @@ void fillMemory(int page_id, int block_id)
 }
 
 // 调用disk.cpp的函数，将修改后的文件内容传进磁盘
+<<<<<<< HEAD
 void SaveDiskFile(DiskManager &disk, string block_content, int block_id)
 {
     // disk.store_content_in_exchange_area(block_content, block_id);
+=======
+void SaveDiskFile(string block_content)
+{
+    char *content = block_content.data();
+    int disk_block_id = disk.save_file(content);
+    //存储文件后磁盘会更新FAT表，所以更新fat_list
+    fat_list = disk.get_fat_block_numbers();
+>>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
 }
 
 // 全局置换CLOCK算法。雏形已有，实现细节还需商讨后完善
@@ -140,11 +180,12 @@ int CLOCK(int page)
 
 // 这个是文件管理系统调用的函数，把用户修改过的新的文件数据传回内存
 // 即：用户写文件
-void WriteFile(int file_id, std::string file_content)
+void WriteFile(string file_content, char *file_info, char *dir_info)
 {
     // 搜索由哪八个内存块负责装文件
     initialBlock_ids();
 
+    string ans = "";
     // 文件分页并装入内存
     int file_size = file_content.size(); // 文件长度
     int page_count = file_size / 40;     // 文件分块后的页数
@@ -154,7 +195,10 @@ void WriteFile(int file_id, std::string file_content)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
+<<<<<<< HEAD
         SaveDiskFile(disk, page_content[i], write_block_id); // disk为声明的DiskManager对象
+=======
+>>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
     }
 
     // 查找是否有不足40B的尾巴
@@ -164,17 +208,35 @@ void WriteFile(int file_id, std::string file_content)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
+<<<<<<< HEAD
         SaveDiskFile(disk, page_content[page_count], write_block_id); // disk为声明的DiskManager对象
     }
 
+=======
+    }
+
+    // 内存中的文件内容写入磁盘，图省事直接用file_content
+    SaveDiskFile(file_content);
+    // 更新文件信息
+    disk.save_file_info(file_info);
+    // 更新目录信息
+    disk.save_dir_info(dir_info);
+>>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
     // 释放内存
     clearBlock_ids();
 }
 
+<<<<<<< HEAD
 // 从磁盘读取文件内容
 // 没在disk.cpp找到对应接口？？？暂时空置
 char *ReadDiskFile(int file_id)
 {
+=======
+// 根据FAT表从磁盘读取文件内容
+char *ReadDiskFile()
+{
+    return disk.read_blocks(fat_list);
+>>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
 }
 
 // 读取内存块中的函数
@@ -189,13 +251,13 @@ char *ReadMemoryBlock(int memory_block_id, int size)
     return content;
 }
 
-// 文件管理系统调用，读文件。因为不知道文件管理系统如何接收，所以暂时定为char数组
-char *ReadFile(int file_id)
+// 文件管理系统调用，读文件。
+char *ReadFile()
 {
     // 搜索由哪八个内存块负责装文件
     initialBlock_ids();
     // 从磁盘读出文件内容
-    string file_content = ReadDiskFile(file_id);
+    string file_content = ReadDiskFile();
 
     // 其实接下来直接return file_content即可。为了符合指导书的要求，这里仍先装内存，再从内存读出
     char *ans;
@@ -222,6 +284,7 @@ char *ReadFile(int file_id)
         temp = ReadMemoryBlock(write_block_id, remainder);
     }
     return ans;
+    // return file_content;
 }
 
 /*
