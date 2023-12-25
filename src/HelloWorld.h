@@ -10,13 +10,26 @@
 #include <QLabel>
 #include <QPixmap>
 #include <QGridLayout>
-class HelloWorld : public QMainWindow {
+#include <QResizeEvent>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QTreeView>
+#include <QFileSystemModel>
+class HelloWorld : public QMainWindow
+{
     Q_OBJECT
-    
+
 public:
-    HelloWorld(QWidget* parent = nullptr);
+    HelloWorld(QWidget *parent = nullptr);
     ~HelloWorld();
 
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+
 private:
-    Ui_HelloWorld* ui;
+    Ui_HelloWorld *ui;
+    QPushButton *status_btn;
+    QPushButton *win_btn;
+    QWidget *win = nullptr;
+    void showTaskManager();
 };

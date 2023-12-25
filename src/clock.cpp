@@ -13,7 +13,7 @@ using namespace std;
 int block_ids[8];
 // 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
 string page_content[1024];
-//初始化DiskManager类。如果main函数已初始化，此条需注释
+// 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
 // 决定由哪八个内存块装入文件
@@ -38,7 +38,6 @@ void initialBlock_ids()
     }
 }
 
-
 // 释放装文件的八个内存块
 void clearBlock_ids()
 {
@@ -48,7 +47,7 @@ void clearBlock_ids()
         memory_block[block_ids[i]].status = 0;
         memory_block[block_ids[i]].file_all_in_memory = true;
     }
-    //顺带把暂存页内容的page_content清空
+    // 顺带把暂存页内容的page_content清空
     fill(page_content, page_content + 1024, "");
 }
 
@@ -64,10 +63,10 @@ void fillMemory(int page_id, int block_id)
     }
 }
 
-//调用disk.cpp的函数，将修改后的文件内容传进磁盘
+// 调用disk.cpp的函数，将修改后的文件内容传进磁盘
 void SaveDiskFile(DiskManager &disk, string block_content, int block_id)
 {
-    disk.store_content_in_exchange_area(block_content, block_id);
+    // disk.store_content_in_exchange_area(block_content, block_id);
 }
 
 // 全局置换CLOCK算法。雏形已有，实现细节还需商讨后完善
@@ -139,7 +138,6 @@ int CLOCK(int page)
     return 0;
 }
 
-
 // 这个是文件管理系统调用的函数，把用户修改过的新的文件数据传回内存
 // 即：用户写文件
 void WriteFile(int file_id, std::string file_content)
@@ -156,7 +154,7 @@ void WriteFile(int file_id, std::string file_content)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
-        SaveDiskFile(disk, page_content[i], write_block_id);    //disk为声明的DiskManager对象
+        SaveDiskFile(disk, page_content[i], write_block_id); // disk为声明的DiskManager对象
     }
 
     // 查找是否有不足40B的尾巴
@@ -166,21 +164,20 @@ void WriteFile(int file_id, std::string file_content)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
-        SaveDiskFile(disk, page_content[page_count], write_block_id);    //disk为声明的DiskManager对象
+        SaveDiskFile(disk, page_content[page_count], write_block_id); // disk为声明的DiskManager对象
     }
 
-    //释放内存
+    // 释放内存
     clearBlock_ids();
 }
 
-//从磁盘读取文件内容
-//没在disk.cpp找到对应接口？？？暂时空置
+// 从磁盘读取文件内容
+// 没在disk.cpp找到对应接口？？？暂时空置
 char *ReadDiskFile(int file_id)
 {
-
 }
 
-//读取内存块中的函数
+// 读取内存块中的函数
 char *ReadMemoryBlock(int memory_block_id, int size)
 {
     char *content;
