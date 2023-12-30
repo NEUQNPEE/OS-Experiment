@@ -16,6 +16,33 @@ string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
+
+//写入文件信息
+void writeFileInfo(char *info)
+{
+    file_info = info;
+}
+
+//写入目录信息
+void writeDirectoryInfo(char *info)
+{
+    dir_info = info;
+}
+
+// 返回文件信息
+char *getFileInfo()
+{
+    int block_number = disk.get_file_info_block_number();
+    return disk.read_block(block_number);
+}
+
+// 返回目录信息
+char *getDirectoryInfo()
+{
+    int block_number = disk.get_dir_info_block_number();
+    return disk.read_block(block_number);
+}
+
 // 初始化内存及相关操作
 void initialMemory()
 {
@@ -33,23 +60,11 @@ void initialMemory()
     dir_info = getDirectoryInfo();
 }
 
-// 返回文件信息
-char *getFileInfo()
-{
-    int block_number = disk.get_file_info_block_number();
-    return disk.read_block(block_number);
-}
-
-// 返回目录信息
-char *getDirectoryInfo()
-{
-    int block_number = disk.get_dir_info_block_number();
-    return disk.read_block(block_number);
-}
-
 // 决定由哪八个内存块装入文件
 void initialBlock_ids()
 {
+    // 初始化FAT表，以防FAT表有更新
+    fat_list = disk.get_fat_block_numbers();
     // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
     for (int i = 0; i < 8; i++)
     {
@@ -95,18 +110,12 @@ void fillMemory(int page_id, int block_id)
 }
 
 // 调用disk.cpp的函数，将修改后的文件内容传进磁盘
-<<<<<<< HEAD
-void SaveDiskFile(DiskManager &disk, string block_content, int block_id)
-{
-    // disk.store_content_in_exchange_area(block_content, block_id);
-=======
 void SaveDiskFile(string block_content)
 {
     char *content = block_content.data();
     int disk_block_id = disk.save_file(content);
     //存储文件后磁盘会更新FAT表，所以更新fat_list
     fat_list = disk.get_fat_block_numbers();
->>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
 }
 
 // 全局置换CLOCK算法。雏形已有，实现细节还需商讨后完善
@@ -195,10 +204,6 @@ void WriteFile(string file_content, char *file_info, char *dir_info)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
-<<<<<<< HEAD
-        SaveDiskFile(disk, page_content[i], write_block_id); // disk为声明的DiskManager对象
-=======
->>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
     }
 
     // 查找是否有不足40B的尾巴
@@ -208,11 +213,6 @@ void WriteFile(string file_content, char *file_info, char *dir_info)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
-<<<<<<< HEAD
-        SaveDiskFile(disk, page_content[page_count], write_block_id); // disk为声明的DiskManager对象
-    }
-
-=======
     }
 
     // 内存中的文件内容写入磁盘，图省事直接用file_content
@@ -221,22 +221,14 @@ void WriteFile(string file_content, char *file_info, char *dir_info)
     disk.save_file_info(file_info);
     // 更新目录信息
     disk.save_dir_info(dir_info);
->>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
     // 释放内存
     clearBlock_ids();
 }
 
-<<<<<<< HEAD
-// 从磁盘读取文件内容
-// 没在disk.cpp找到对应接口？？？暂时空置
-char *ReadDiskFile(int file_id)
-{
-=======
 // 根据FAT表从磁盘读取文件内容
 char *ReadDiskFile()
 {
     return disk.read_blocks(fat_list);
->>>>>>> b14e6bf6b1a6b2f5c290ed0277784c26974f65da
 }
 
 // 读取内存块中的函数
@@ -287,49 +279,8 @@ char *ReadFile()
     // return file_content;
 }
 
-/*
-//以下为22日晚讨论出的框架。因思路有所改变，暂时搁置不用
-
-// 文件管理系统不知道文件所使用的内存块，说明内存肯定没有这个文件，调用这个
-// 从磁盘读入文件
-int* readDiskFile(int file_id)
+//用户删除文件
+void DeleteFile(int file_block_number)
 {
-    // 调用磁盘管理系统的函数，传入file_id
-    // 让磁盘把文件找到并返回文件的起始盘块号
-
-    // 然后调用读取FAT表的函数，根据FAT表确定需要读入的所有磁盘块
-
-    // 调用ReadDiskBlock
-
-    // 返回装入的内存块块号，以数组形式返回
+    disk.delete_file_info(file_block_number);
 }
-
-// 读入磁盘块
-void ReadDiskBlock(int block_id)
-{
-    // 调用磁盘系统提供的函数，传入block_id，得到一个块
-
-    // 选择放进那个内存块
-}
-
-// 文件管理系统要求保存某个文件
-void SaveFile(int* block_ids,char* file)
-{
-    // 这传入的是文件所用到的内存块以及整个文件序列化后的char数组
-    // 按照内存块大小吧file切分，依次调用WriteMemoryBolcks把内容写进内存块
-    // 再调用WriteDiskBlock把这些块存入磁盘
-}
-
-// 文件管理系统管往哪个内存块写数据，内存管理系统不管这个
-void WriteMemoryBolcks(int block_id,char* data)
-{
-
-}
-
-// 文件管理系统调用该函数，让内存管理系统把某个文件的内存块存磁盘
-// 文件管理系统知道要存哪八个块
-void WriteDiskBlock(int* block_ids)
-{
-    // 这里调用磁盘系统的函数，把block_ids这几个内存块写回磁盘块
-}
-*/
