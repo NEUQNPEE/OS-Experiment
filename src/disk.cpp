@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2023-12-30 17:21:08
+ * @LastEditTime : 2024-01-01 20:56:16
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -568,15 +568,15 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
     return content;
 }
 
-// 存入文件信息
-void DiskManager::save_file_info(const char *file_info)
-{
-    int begin_block_number = save_file(file_info);
-    file_info_block_number = begin_block_number;
+// // 存入文件信息
+// void DiskManager::save_file_info(const char *file_info)
+// {
+//     int begin_block_number = save_file(file_info);
+//     file_info_block_number = begin_block_number;
 
-    // 更新超级块
-    update_super_block();
-}
+//     // 更新超级块
+//     update_super_block();
+// }
 
 // 存入目录信息
 void DiskManager::save_dir_info(const char *dir_info)
@@ -588,11 +588,11 @@ void DiskManager::save_dir_info(const char *dir_info)
     update_super_block();
 }
 
-// 获取文件信息起始盘块号
-int DiskManager::get_file_info_block_number()
-{
-    return file_info_block_number;
-}
+// // 获取文件信息起始盘块号
+// int DiskManager::get_file_info_block_number()
+// {
+//     return file_info_block_number;
+// }
 
 // 获取目录信息起始盘块号
 int DiskManager::get_dir_info_block_number()
@@ -709,38 +709,56 @@ std::map<int, int> DiskManager::get_file_allocation_table()
 // 读取超级块
 void DiskManager::load_super_block()
 {
-    // 读取超级块内容，里面就两个int：文件信息起始盘块号和目录信息起始盘块号
+    // // 读取超级块内容，里面就两个int：文件信息起始盘块号和目录信息起始盘块号
+    // char* super_block_content = read_block(fat_block_numbers.size() + 1);
+    // // 解析超级块内容
+    // int i = 0;
+    // int file_info_block_number = 0;
+    // int dir_info_block_number = 0;
+    // while (super_block_content[i] != ' ')
+    // {
+    //     file_info_block_number = file_info_block_number * 10 + super_block_content[i] - '0';
+    //     i++;
+    // }
+
+    // // 跳过空格
+    // i++;
+
+    // while (super_block_content[i] != '\0')
+    // {
+    //     dir_info_block_number = dir_info_block_number * 10 + super_block_content[i] - '0';
+    //     i++;
+    // }
+
+    //// 更新文件信息起始盘块号和目录信息起始盘块号
+    // this->file_info_block_number = file_info_block_number;
+
+    // 读取超级块内容，里面就一个int：目录信息起始盘块号
     char* super_block_content = read_block(fat_block_numbers.size() + 1);
     // 解析超级块内容
     int i = 0;
-    int file_info_block_number = 0;
     int dir_info_block_number = 0;
-    while (super_block_content[i] != ' ')
-    {
-        file_info_block_number = file_info_block_number * 10 + super_block_content[i] - '0';
-        i++;
-    }
-
-    // 跳过空格
-    i++;
-
     while (super_block_content[i] != '\0')
     {
         dir_info_block_number = dir_info_block_number * 10 + super_block_content[i] - '0';
         i++;
     }
-
-    // 更新文件信息起始盘块号和目录信息起始盘块号
-    this->file_info_block_number = file_info_block_number;
+    
+    // 更新目录信息起始盘块号
     this->dir_info_block_number = dir_info_block_number;
 }
 
 // 更新超级块
 void DiskManager::update_super_block()
 {
-    // 将文件信息起始盘块号和目录信息起始盘块号写入超级块
-    char* super_block_content = new char[2 * sizeof(int) + 2];
-    sprintf(super_block_content, "%d %d", file_info_block_number, dir_info_block_number);
+    // //将文件信息起始盘块号和目录信息起始盘块号写入超级块
+    // char* super_block_content = new char[2 * sizeof(int) + 2];
+    // sprintf(super_block_content, "%d %d", file_info_block_number, dir_info_block_number);
+    // write_block(fat_block_numbers.size() + 1, super_block_content);
+
+    // 将目录信息起始盘块号写入超级块（超级块里就一个int）
+    char* super_block_content = new char[sizeof(int) + 1];
+    sprintf(super_block_content, "%d", dir_info_block_number);
     write_block(fat_block_numbers.size() + 1, super_block_content);
 }
 

@@ -196,8 +196,8 @@ private:
     // 兑换区用的循环队列，用于存储空闲块
     std::queue<int> exchange_area_queue;
 
-    // 文件信息起始盘块号
-    int file_info_block_number;
+    // // 文件信息起始盘块号
+    // int file_info_block_number;
 
     // 目录信息起始盘块号
     int dir_info_block_number;
@@ -259,8 +259,8 @@ public:
     // 从多个盘块读取内容
     char *read_blocks(std::vector<int> block_numbers);
 
-    // 存入文件信息
-    void save_file_info(const char *file_info);
+    // // 存入文件信息
+    // void save_file_info(const char *file_info);
 
     // 存入目录信息
     void save_dir_info(const char *dir_info);
