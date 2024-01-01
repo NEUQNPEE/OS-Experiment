@@ -387,7 +387,7 @@ Folder *Folder::copy_Folder()
     {
         folder.Add_file(this->get_File_child()[i]->copy_File());
     }
-    return &Folder();
+    return &folder;
 }
 
 // 添加文件
