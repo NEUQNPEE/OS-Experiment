@@ -7,9 +7,9 @@
 using namespace std;
 
 // 用于装入文件的八个内存块的块号
-int block_ids[8];
+// int block_ids[8];
 // 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
-string page_content[1024];
+// string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
@@ -33,7 +33,7 @@ char *ReadDirectoryInfo(string file_id)
     if(file_id_block_map.count(file_id) == 0)
     {
         cout<<"file not find !"<<endl;
-        return;
+        return "";
     }
     
     int block_number = disk.get_dir_info_block_number();
