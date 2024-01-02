@@ -181,6 +181,12 @@ void delete_file(File *file);
 // 改文件夹名接口
 Folder *folder_change_name(Folder *folder, std::string name);
 
+// 改文件名
+File *file_change_name(File *file, std::string name);
+
+// 改文件内容
+File *file_change_content(File *file, std::string content);
+
 // 获得文件夹的子文件夹
 std::vector<Folder *> get_folder_child(Folder *folder);
 
