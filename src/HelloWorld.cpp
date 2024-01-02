@@ -213,7 +213,8 @@ public:
 class TextFileIcon : public QPushButton
 {
 public:
-    TextFileIcon(QWidget *parent = nullptr, int height = 0) : QPushButton(parent)
+    // 有参构造函数，创建时就指定文件路径
+    TextFileIcon(QWidget *parent = nullptr, int height = 0, QString filePath = "") : QPushButton(parent)
     {
         QIcon recycle_icon("icon/TXT.png");
         QPixmap pixma = recycle_icon.pixmap(QSize(50, 50));
@@ -223,19 +224,30 @@ public:
         move(0, height);
 
         setStyleSheet("QPushButton {"
-                      "    border: none;"
-                      "    background-repeat: no-repeat;"
-                      "    background-position: center;"
+                      "    border: none;"                 // 去除边框
+                      "    background-repeat: no-repeat;" // 禁止平铺
+                      "    background-position: center;"  // 居中对齐
                       "}");
 
         // 连接双击事件
         installEventFilter(this);
 
         textEdit = nullptr;
+
+        this->filePath = filePath;
+
+        fileContent = "你好呀，我的名字是永雏塔菲喵！";
     }
 
 private:
+    // 文本编辑器
     QTextEdit *textEdit;
+
+    // 本按钮指向的文件地址
+    QString filePath;
+
+    // 模拟用的文件内容
+    QString fileContent;
 
     bool eventFilter(QObject *obj, QEvent *event) override
     {
@@ -243,6 +255,16 @@ private:
         {
             openTextWindow();
             return true;
+        }
+
+        if (event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_S && keyEvent->modifiers() == Qt::ControlModifier)
+            {
+                saveFileContent();
+                return true;
+            }
         }
         return false;
     }
@@ -256,7 +278,25 @@ private:
         textEdit = new QTextEdit(textWindow);
         textWindow->setCentralWidget(textEdit);
 
+        // 为文本编辑器添加事件过滤器
+        textEdit->installEventFilter(this);
+
+        // 读取文件内容,先模拟一下
+        if (filePath == "root/first.txt")
+        {
+            textEdit->setText(fileContent);
+        }
+
         textWindow->show();
+    }
+
+    // 能使用ctrl+s保存文件
+    void saveFileContent()
+    {
+        if (textEdit)
+        {
+            fileContent = textEdit->toPlainText();
+        }
     }
 };
 
@@ -327,8 +367,9 @@ HelloWorld::HelloWorld(QWidget *parent)
     // 显示新窗口
     myComputerWindow->show(); });
 
-    TextFileIcon *textFileIcon = new TextFileIcon(this, mycomputer_btn->height());
-    
+    // 创建文本文件图标,假设此图标指向的文件路径为root/first.txt
+    TextFileIcon *textFileIcon = new TextFileIcon(this, mycomputer_btn->height(), "root/first.txt");
+
     /**
      * 底部状态栏按钮部分
      */

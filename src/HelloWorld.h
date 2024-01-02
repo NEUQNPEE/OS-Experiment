@@ -18,6 +18,7 @@
 #include <QPainter>
 #include <QSplitter>
 #include <QTextEdit>
+#include <QMessageBox>
 class HelloWorld : public QMainWindow
 {
     Q_OBJECT
