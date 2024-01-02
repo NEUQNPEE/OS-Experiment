@@ -5,9 +5,6 @@
 #include "disk.h"
 
 using namespace std;
-/*
- * 文件管理系统才知道一个文件使用那八个内存块
- */
 
 // 用于装入文件的八个内存块的块号
 int block_ids[8];
@@ -17,14 +14,28 @@ string page_content[1024];
 DiskManager disk;
 
 // 写入目录信息
-void writeDirectoryInfo(char *info)
+void WriteDirectoryInfo(string file_id, char *info)
 {
-    dir_info = info;
+    // 找文件是否存在
+    if(file_id_block_map.count(file_id) == 0)
+    {
+        cout<<"file not find !"<<endl;
+        return;
+    }
+
+    disk.save_dir_info(info);
 }
 
 // 返回目录信息
-char *getDirectoryInfo()
+char *ReadDirectoryInfo(string file_id)
 {
+    // 找文件是否存在
+    if(file_id_block_map.count(file_id) == 0)
+    {
+        cout<<"file not find !"<<endl;
+        return;
+    }
+    
     int block_number = disk.get_dir_info_block_number();
     return disk.read_block(block_number);
 }
@@ -41,7 +52,7 @@ void initialMemory()
     // 初始化FAT表
     fat_list = disk.get_fat_block_numbers();
     // 初始化目录信息
-    dir_info = getDirectoryInfo();
+    dir_info = "";
 }
 
 // 决定由哪八个内存块装入文件
@@ -79,6 +90,32 @@ void clearBlock_ids()
     }
     // 顺带把暂存页内容的page_content清空
     fill(page_content, page_content + 1024, "");
+    //顺带把当前进程调度内存块的状况清空
+    //clock_record.clear();
+}
+
+//记录内存块调度状况
+void recordBlock_ids()
+{
+    string ans = "";
+    for (int i = 0; i < 8; i++)
+    {
+        //判断内存块是否装页
+        if(memory_block[block_ids[i]].page_id < 0)continue;
+
+        ans = ans + "块号:" + to_string(block_ids[i]) + ',';
+        ans = ans + "页号:" + to_string(memory_block[block_ids[i]].page_id) + ',';
+        ans = ans + "内容:";
+        for(int i = memory_block[block_ids[i]].begin; (i - memory_block[block_ids[i]].begin) < 40; i++)
+        {
+            ans = ans + memory[i];
+        }
+        ans = ans + "\n";
+    }
+    //判断调度状况是否为空
+    if(ans == "")return;
+    //将调度情况插入当前进程调度内存块状况的vector数组
+    clock_record.push_back(ans);
 }
 
 // 将文件页的内容填充到内存中。
@@ -103,7 +140,7 @@ int SaveDiskFile(string block_content)
     return disk_block_id;
 }
 
-// 全局置换CLOCK算法。雏形已有，实现细节还需商讨后完善
+// 全局置换CLOCK算法，返回调度后装入的内存块块号
 int CLOCK(int page)
 {
     // 装入的内存块的块号
@@ -172,9 +209,8 @@ int CLOCK(int page)
     return 0;
 }
 
-// 这个是文件管理系统调用的函数，把用户修改过的新的文件数据传回内存
-// 即：用户写文件
-void WriteFile(string file_id, string file_content, char *dir_info)
+// 用户写文件内容
+void WriteFile(string file_id, string file_content, char *write_dir_info)
 {
     // 搜索由哪八个内存块负责装文件
     initialBlock_ids();
@@ -189,6 +225,7 @@ void WriteFile(string file_id, string file_content, char *dir_info)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
+        recordBlock_ids();
     }
 
     // 查找是否有不足40B的尾巴
@@ -198,6 +235,7 @@ void WriteFile(string file_id, string file_content, char *dir_info)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
+        recordBlock_ids();
     }
 
     // 内存中的文件内容写入磁盘，图省事直接用file_content
@@ -212,12 +250,12 @@ void WriteFile(string file_id, string file_content, char *dir_info)
         file_id_block_map.insert(pair<string, int>(file_id, disk_block_id));
     }
     // 更新目录信息
-    disk.save_dir_info(dir_info);
+    disk.save_dir_info(write_dir_info);
     // 释放内存
     clearBlock_ids();
 }
 
-// 根据FAT表从磁盘读取文件内容
+// 从磁盘读取文件内容
 char *ReadDiskFile(int block_id)
 {
     return disk.read_block(block_id);
@@ -267,6 +305,7 @@ string ReadFile(string file_id)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
+        recordBlock_ids();
         char *temp = ans + i * 40;
         temp = ReadMemoryBlock(write_block_id, 40);
     }
@@ -277,9 +316,14 @@ string ReadFile(string file_id)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
+        recordBlock_ids();
         char *temp = ans + page_count * 40;
         temp = ReadMemoryBlock(write_block_id, remainder);
     }
+
+    // 释放内存
+    clearBlock_ids();
+
     // return ans;
     return file_content;
 }
