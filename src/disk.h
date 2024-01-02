@@ -297,4 +297,7 @@ public:
 
     // 模拟用加载
     void load_info_from_txt();
+
+    // qt所需的磁盘块占用情况，返回1024大小的bool数组（std标准数组）
+    std::vector<bool> get_disk_block_status();
 };

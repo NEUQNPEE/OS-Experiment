@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-01 20:56:16
+ * @LastEditTime : 2024-01-03 03:54:53
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -796,6 +796,29 @@ void DiskManager::load_info_from_txt()
         temp_content[disk.get_block_size()] = '\0';
         disk.get_block(i)->set_content(temp_content);
     }
+}
+
+std::vector<bool> DiskManager::get_disk_block_status()
+{
+    std::vector<bool> disk_block_status = std::vector<bool>(1024);
+    // 先将所有块置为true
+    for (int i = 0; i < 1024; i++)
+    {
+        disk_block_status[i] = true;
+    }
+
+    // 其实是读成组链块的状态
+    GroupBlock *temp_block = group_block_head;
+    while (temp_block != nullptr)
+    {
+        for(int block_number : temp_block->block_numbers)
+        {
+            // 空闲就置为false
+            disk_block_status[block_number] = false;
+        }
+    }
+
+    return disk_block_status;
 }
 
 // int main()
