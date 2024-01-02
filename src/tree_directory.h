@@ -166,11 +166,14 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 // 树形目录反序列化
 void tree_dir_diser(std::string str);
 
+// 判断是否重名接口
+bool is_repeat(Folder *folder, std::string str);
+
 // 添加文件接口
-File *add_file(Folder *folder);
+File *add_file(Folder *folder, std::string str);
 
 // 添加文件夹接口
-Folder *add_folder(Folder *folder);
+Folder *add_folder(Folder *folder, std::string str);
 
 // 删除文件夹
 void delete_folder(Folder *folder);
@@ -196,8 +199,8 @@ std::vector<File *> get_file_child(Folder *folder);
 // 打开文件
 std::string look_file_content(File *file);
 
-// 查看文件
-File *look_file(File *file);
+// 查看文件属性
+std::vector<std::string> look_file(File *file);
 
-// 查看文件夹
-Folder *look_folder(Folder *folder);
+// 查看文件夹属性
+std::vector<std::string> look_folder(Folder *folder);
