@@ -83,7 +83,7 @@ private:
 
 class DiskWidget : public QWidget
 {
-    private:
+private:
     // 兑换区和文件区的指针，便于后续操作
     QGridLayout *exchangeGridLayout;
     QGridLayout *fileGridLayout;
@@ -210,6 +210,56 @@ public:
     }
 };
 
+class TextFileIcon : public QPushButton
+{
+public:
+    TextFileIcon(QWidget *parent = nullptr, int height = 0) : QPushButton(parent)
+    {
+        QIcon recycle_icon("icon/TXT.png");
+        QPixmap pixma = recycle_icon.pixmap(QSize(50, 50));
+        setIcon(QIcon(pixma));
+        setIconSize(pixma.size());
+        setFixedSize(80, 100);
+        move(0, height);
+
+        setStyleSheet("QPushButton {"
+                      "    border: none;"
+                      "    background-repeat: no-repeat;"
+                      "    background-position: center;"
+                      "}");
+
+        // 连接双击事件
+        installEventFilter(this);
+
+        textEdit = nullptr;
+    }
+
+private:
+    QTextEdit *textEdit;
+
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::MouseButtonDblClick)
+        {
+            openTextWindow();
+            return true;
+        }
+        return false;
+    }
+
+    void openTextWindow()
+    {
+        QMainWindow *textWindow = new QMainWindow(this);
+        textWindow->setWindowTitle("文本文件");
+        textWindow->resize(800, 600);
+
+        textEdit = new QTextEdit(textWindow);
+        textWindow->setCentralWidget(textEdit);
+
+        textWindow->show();
+    }
+};
+
 HelloWorld::HelloWorld(QWidget *parent)
     : QMainWindow(parent), ui(new Ui_HelloWorld)
 {
@@ -277,33 +327,8 @@ HelloWorld::HelloWorld(QWidget *parent)
     // 显示新窗口
     myComputerWindow->show(); });
 
-    /**
-     * 文本文件图标部分
-     */
-    // 在此电脑按钮的正下方添加另一个按钮
-    QIcon recycle_icon("icon/TXT.png");
-    QPixmap pixma = recycle_icon.pixmap(QSize(50, 50));
-    QPushButton *recycle_btn = new QPushButton("", this);
-    recycle_btn->setIcon(QIcon(pixma));
-    recycle_btn->setIconSize(pixma.size());
-    recycle_btn->setFixedSize(80, 100);
-    recycle_btn->move(0, mycomputer_btn->height());
-
-    recycle_btn->setStyleSheet("QPushButton {"
-                               "    border: none;"                 // 去除边框
-                               "    background-repeat: no-repeat;" // 禁止平铺
-                               "    background-position: center;"  // 居中对齐
-                               "}");
-
-    // 双击按钮后弹出一个窗口，窗口名字为文本文件
-    connect(recycle_btn, &QPushButton::clicked, [=]()
-            {
-                // 创建新窗口
-                QMainWindow *textWindow = new QMainWindow(this);
-                textWindow->setWindowTitle("文本文件");
-                textWindow->resize(800, 600); // 设置窗口大小
-                textWindow->show(); });
-
+    TextFileIcon *textFileIcon = new TextFileIcon(this, mycomputer_btn->height());
+    
     /**
      * 底部状态栏按钮部分
      */

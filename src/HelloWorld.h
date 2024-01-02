@@ -17,6 +17,7 @@
 #include <QFileSystemModel>
 #include <QPainter>
 #include <QSplitter>
+#include <QTextEdit>
 class HelloWorld : public QMainWindow
 {
     Q_OBJECT
