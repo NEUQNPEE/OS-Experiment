@@ -210,11 +210,11 @@ public:
     }
 };
 
-class TextFileIcon : public QPushButton
+class TextFileButton : public QPushButton
 {
 public:
     // 有参构造函数，创建时就指定文件路径
-    TextFileIcon(QWidget *parent = nullptr, int height = 0, QString filePath = "") : QPushButton(parent)
+    TextFileButton(QWidget *parent = nullptr, int height = 0, QString filePath = "") : QPushButton(parent)
     {
         QIcon recycle_icon("icon/TXT.png");
         QPixmap pixma = recycle_icon.pixmap(QSize(50, 50));
@@ -300,6 +300,174 @@ private:
     }
 };
 
+class CustomItemDelegate : public QStyledItemDelegate
+{
+public:
+    explicit CustomItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        QStyleOptionViewItem newOption = option;
+        newOption.textElideMode = Qt::ElideMiddle; // 设置文本省略模式
+
+        // 绘制背景
+        painter->save();
+        painter->fillRect(option.rect, option.palette.base());
+
+        // 绘制文本
+        QString text = index.data(Qt::DisplayRole).toString();
+        painter->setFont(option.font);
+        painter->setPen(option.palette.text().color());
+
+        // 绘制图标（根据实际情况设置图标）
+        // 图标就先用WLGOO.png代替了
+        QIcon icon("icon/WLOGO.png");
+
+        if (!icon.isNull())
+        {
+            int iconSize = option.decorationSize.height();
+            QRect iconRect = QRect(option.rect.left() + 5, option.rect.top() + (option.rect.height() - iconSize) / 2,
+                                   iconSize, iconSize);
+            icon.paint(painter, iconRect);
+        }
+
+        // 文本在图标右侧，所以需要调整矩形
+        QRect textRect = option.rect.adjusted(5, 0, -5, 0);
+        textRect.setLeft(textRect.left() + 25);
+
+        // 绘制文本
+        painter->drawText(textRect, Qt::AlignVCenter, text);
+
+        painter->restore();
+    }
+};
+
+class MyComputerButton : public QPushButton
+{
+public:
+    // 有参构造函数，创建时就指定文件路径
+    MyComputerButton(QWidget *parent = nullptr, int height = 0) : QPushButton(parent)
+    {
+        QIcon recycle_icon("icon/mycomputer.png");
+        QPixmap pixma = recycle_icon.pixmap(QSize(50, 50));
+        setIcon(QIcon(pixma));
+        setIconSize(pixma.size());
+        setFixedSize(80, 100);
+        move(0, height);
+
+        setStyleSheet("QPushButton {"
+                      "    border: none;"                 // 去除边框
+                      "    background-repeat: no-repeat;" // 禁止平铺
+                      "    background-position: center;"  // 居中对齐
+                      "}");
+
+        // 连接双击事件
+        installEventFilter(this);
+
+        // 写入模拟的目录信息
+        rootEntry.type = "folder";
+        rootEntry.name = "root";
+
+        DirectoryEntry *subDir1 = new DirectoryEntry;
+        subDir1->type = "folder";
+        subDir1->name = "subdir1";
+
+        DirectoryEntry *subDir2 = new DirectoryEntry;
+        subDir2->type = "folder";
+        subDir2->name = "subdir2";
+
+        DirectoryEntry *file1 = new DirectoryEntry;
+        file1->type = "file";
+        file1->name = "file1.txt";
+
+        DirectoryEntry *file2 = new DirectoryEntry;
+        file2->type = "file";
+        file2->name = "file2.txt";
+
+        rootEntry.subdirectories.append(subDir1);
+        rootEntry.subdirectories.append(subDir2);
+        rootEntry.files.append(file1);
+        rootEntry.files.append(file2);
+
+        DirectoryEntry *subSubDir = new DirectoryEntry;
+        subSubDir->type = "folder";
+        subSubDir->name = "subsubdir";
+
+        subDir1->subdirectories.append(subSubDir);
+
+        subDir2->files.append(file1);
+    }
+
+private:
+    // 模拟用的目录信息，一个链表，包括一个类型，一个名字，n个指向子目录的指针，n个指向子文件的指针
+    struct DirectoryEntry
+    {
+        QString type;                           // 目录类型（例如：文件夹、文件）
+        QString name;                           // 目录名字
+        QList<DirectoryEntry *> subdirectories; // 指向子目录的指针链表
+        QList<DirectoryEntry *> files;          // 指向子文件的指针链表
+    };
+
+    // 根目录
+    DirectoryEntry rootEntry;
+
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::MouseButtonDblClick)
+        {
+            openMyComputerWindow();
+            return true;
+        }
+        return false;
+    }
+
+    void openMyComputerWindow()
+    {
+        QMainWindow *myComputerWindow = new QMainWindow(this);
+        myComputerWindow->setWindowTitle("此电脑");
+        myComputerWindow->resize(800, 600);
+
+        // 根据模拟的目录信息，创建一个树形视图
+        QTreeView *treeView = new QTreeView(myComputerWindow);
+        treeView->setHeaderHidden(true); // 隐藏列头
+
+        QStandardItemModel *model = new QStandardItemModel(treeView);
+        treeView->setModel(model);
+
+        // 创建根节点
+        QStandardItem *rootItem = new QStandardItem(rootEntry.name);
+        model->appendRow(rootItem);
+
+        // 递归添加子目录和子文件
+        addTreeItems(rootItem, rootEntry.subdirectories);
+        addTreeItems(rootItem, rootEntry.files);
+
+        // 设置树形视图的列宽自适应内容
+        treeView->resizeColumnToContents(0);
+
+        // 使用自定义ItemDelegate来美化视图的显示
+        CustomItemDelegate *itemDelegate = new CustomItemDelegate(treeView);
+        treeView->setItemDelegate(itemDelegate);
+
+        // 显示新窗口
+        myComputerWindow->setCentralWidget(treeView);
+        myComputerWindow->show();
+    }
+
+    void addTreeItems(QStandardItem *parentItem, const QList<DirectoryEntry *> &entries)
+    {
+        foreach (DirectoryEntry *entry, entries)
+        {
+            QStandardItem *item = new QStandardItem(entry->name);
+            parentItem->appendRow(item);
+
+            // 递归添加子目录和子文件
+            addTreeItems(item, entry->subdirectories);
+            addTreeItems(item, entry->files);
+        }
+    }
+};
+
 HelloWorld::HelloWorld(QWidget *parent)
     : QMainWindow(parent), ui(new Ui_HelloWorld)
 {
@@ -321,54 +489,11 @@ HelloWorld::HelloWorld(QWidget *parent)
     /**
      * 此电脑图标部分
      */
-    QIcon mycomputer_icon("icon/mycomputer.png");
-    QPixmap pix = mycomputer_icon.pixmap(QSize(50, 50));
-    QPushButton *mycomputer_btn = new QPushButton("", this);
-    mycomputer_btn->setIcon(QIcon(pix));
-    mycomputer_btn->setIconSize(pix.size());
-    mycomputer_btn->setFixedSize(80, 100);
-    mycomputer_btn->move(0, 0);
 
-    // 使用样式表使图标填充按钮
-    mycomputer_btn->setStyleSheet("QPushButton {"
-                                  "    border: none;"                 // 去除边框
-                                  "    background-repeat: no-repeat;" // 禁止平铺
-                                  "    background-position: center;"  // 居中对齐
-                                  "}");
-
-    // 按钮添加点击事件
-    connect(mycomputer_btn, &QPushButton::clicked, [=]()
-            {
-    // 创建新窗口
-    QMainWindow *myComputerWindow = new QMainWindow(this);
-    myComputerWindow->setWindowTitle("此电脑");
-    myComputerWindow->resize(800, 600);  // 设置窗口大小
-
-    // 创建文件系统模型和视图
-    QFileSystemModel *fileModel = new QFileSystemModel(this);
-    fileModel->setRootPath(QDir::rootPath());  // 从根目录开始
-    fileModel->setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);  // 显示所有条目，但排除.和..
-
-    QTreeView *treeView = new QTreeView(myComputerWindow);
-    treeView->setModel(fileModel);
-    treeView->setRootIndex(fileModel->index(QDir::rootPath()));  // 设置根索引
-
-    // 设置QTreeView的样式以更好地模仿Windows资源管理器
-    treeView->setAnimated(false);
-    treeView->setIndentation(20);
-    treeView->setSortingEnabled(true);
-    treeView->sortByColumn(0, Qt::AscendingOrder);  // 根据第一列排序
-    treeView->setHeaderHidden(false);  // 显示头部
-    treeView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);  // 根据内容调整列宽
-
-    // 将treeView设置为窗口的中心部件
-    myComputerWindow->setCentralWidget(treeView);
-
-    // 显示新窗口
-    myComputerWindow->show(); });
+    MyComputerButton *mycomputer_btn = new MyComputerButton(this, 0);
 
     // 创建文本文件图标,假设此图标指向的文件路径为root/first.txt
-    TextFileIcon *textFileIcon = new TextFileIcon(this, mycomputer_btn->height(), "root/first.txt");
+    TextFileButton *textFileIcon = new TextFileButton(this, mycomputer_btn->height(), "root/first.txt");
 
     /**
      * 底部状态栏按钮部分
@@ -484,6 +609,29 @@ HelloWorld::HelloWorld(QWidget *parent)
         win->raise();
         win->activateWindow();
     } });
+
+    /**
+     * 右下角时间部分
+     */
+    // 创建一个标签，用于显示时间
+    timeLabel = new QLabel(this);
+    timeLabel->setStyleSheet("color: black; font-size: 20px;");
+    timeLabel->setAlignment(Qt::AlignCenter);
+    timeLabel->resize(200, 50);
+    timeLabel->move(this->width() - timeLabel->width(), this->height() - timeLabel->height());
+    timeLabel->show();
+
+    // 创建一个定时器，每秒更新一次时间
+    QTimer *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, [=]()
+            {
+        // 获取当前时间
+        QDateTime currentDateTime = QDateTime::currentDateTime();
+        // 格式化时间
+        QString currentTime = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
+        // 设置标签的文本
+        timeLabel->setText(currentTime); });
+    timer->start(1000); // 启动定时器，每秒触发一次
 }
 
 HelloWorld::~HelloWorld()
@@ -511,6 +659,12 @@ void HelloWorld::resizeEvent(QResizeEvent *event)
         // 使用同样的逻辑，更新 win_btn 的大小和位置
         win_btn->resize(50, 50);
         win_btn->move(0, this->height() - win_btn->height());
+    }
+
+    // 更新右下角时间的位置
+    if (timeLabel)
+    {
+        timeLabel->move(this->width() - timeLabel->width(), this->height() - timeLabel->height());
     }
 }
 

@@ -19,6 +19,9 @@
 #include <QSplitter>
 #include <QTextEdit>
 #include <QMessageBox>
+#include <QTimer>
+#include <QStandardItemModel>
+#include <QStyledItemDelegate>
 class HelloWorld : public QMainWindow
 {
     Q_OBJECT
@@ -35,5 +38,6 @@ private:
     QPushButton *status_btn;
     QPushButton *win_btn;
     QWidget *win = nullptr;
+    QLabel *timeLabel;
     void showTaskManager();
 };
