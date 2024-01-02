@@ -9,7 +9,7 @@
 // 得到当前时间的函数
 std::string gettime();
 
-//文件夹结构体声明
+// 文件夹结构体声明
 struct Folder;
 
 // 文件结构体
@@ -28,25 +28,23 @@ private:
     */
     int ID;
     std::string name;
-    std::string type;
     std::string addr;
     int size = 0;
     std::string Create_time;
     std::string Change_time;
     std::string content = "";
-    Folder* dad;
+    Folder *dad;
 
 public:
     // 读文件属性函数
     int get_ID();
     std::string get_Name();
-    std::string get_Type();
     std::string get_Addr();
     int get_Size();
     std::string get_Create_time();
     std::string get_Change_time();
     std::string get_Content();
-    Folder* get_Dad();
+    Folder *get_Dad();
 
     // 写文件属性函数
     void set_Name_Type(std::string str);
@@ -54,14 +52,11 @@ public:
     void set_Content(std::string str);
 
     // 文件属性改变
-    void change_Dad(Folder* folder);
+    void change_Dad(Folder *folder);
     void change_Addr(std::string str);
 
     // 构造函数
-    File(std::string str="新建文件");
-
-    // 拷贝文件
-    File* copy_File();
+    File(std::string str);
 
     // 删除文件
     void delete_File();
@@ -72,13 +67,13 @@ public:
     // 文件属性反序列化
     void file_deserialize(std::string str);
 
-    //文件内容序列化
+    // 文件内容序列化
     std::string file_con_serialize();
 
-    //文件内容反序列化
+    // 文件内容反序列化
     void file_con_deserialize(std::string str);
 
-      // 展示文件属性
+    // 展示文件属性
     void show();
 };
 
@@ -107,9 +102,9 @@ private:
     int Folder_number = 0;
     std::string Create_time;
     std::string Change_time;
-    std::vector<Folder*> Folder_child;
-    std::vector<File*> File_child;
-    Folder* dad;
+    std::vector<Folder *> Folder_child;
+    std::vector<File *> File_child;
+    Folder *dad;
 
 public:
     // 读文件内容函数
@@ -121,9 +116,9 @@ public:
     int get_Folder_number();
     std::string get_Create_time();
     std::string get_Change_time();
-    std::vector<Folder*> get_Folder_child();
-    std::vector<File*> get_File_child();
-    Folder* get_Dad();
+    std::vector<Folder *> get_Folder_child();
+    std::vector<File *> get_File_child();
+    Folder *get_Dad();
 
     // 设置文件名称
     void set_Name(std::string str);
@@ -132,22 +127,19 @@ public:
     void change_File_number(int n);
     void change_Folder_number(int n);
     void change_Change_time(std::string std);
-    void change_Folder_child(bool flag, Folder* folder);
-    void change_File_child(bool flag, File* file);
-    void change_Dad(Folder* folder);
+    void change_Folder_child(bool flag, Folder *folder);
+    void change_File_child(bool flag, File *file);
+    void change_Dad(Folder *folder);
     void change_Addr(std::string str);
 
     // 构造函数
-    Folder(std::string str="新建文件夹");
-
-    // 拷贝文件夹
-    Folder* copy_Folder();
+    Folder(std::string str);
 
     // 添加文件
-    void Add_file(File* file, int flag = 1);
+    void Add_file(File *file, int flag = 1);
 
     // 添加文件夹
-    void Add_folder(Folder* folder, int flag = 1);
+    void Add_folder(Folder *folder, int flag = 1);
 
     // 删除文件夹
     void delete_folder();
@@ -162,14 +154,44 @@ public:
     void show();
 };
 
-//树形目录序列化生成
+// 树形目录序列化生成
 void tree_dir_ser_gen(std::string str);
 
-//树形目录序列化
+// 树形目录序列化
 std::string tree_dir_ser();
 
-//树形目录反序列化生成
-void tree_dir_diser_gen(std::queue<int>type, std::queue<int>child_num, std::queue<std::string>inform);
+// 树形目录反序列化生成
+void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::queue<std::string> inform);
 
-//树形目录反序列化
+// 树形目录反序列化
 void tree_dir_diser(std::string str);
+
+// 添加文件接口
+File *add_file(Folder *folder);
+
+// 添加文件夹接口
+Folder *add_folder(Folder *folder);
+
+// 删除文件夹
+void delete_folder(Folder *folder);
+
+// 删除文件
+void delete_file(File *file);
+
+// 改文件夹名接口
+Folder *folder_change_name(Folder *folder, std::string name);
+
+// 获得文件夹的子文件夹
+std::vector<Folder *> get_folder_child(Folder *folder);
+
+// 获得文件夹的子文件
+std::vector<File *> get_file_child(Folder *folder);
+
+// 打开文件
+std::string look_file_content(File *file);
+
+// 查看文件
+File *look_file(File *file);
+
+// 查看文件夹
+Folder *look_folder(Folder *folder);

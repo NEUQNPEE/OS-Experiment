@@ -1,5 +1,5 @@
 #include "tree_directory.h"
-Folder root = Folder("root");
+Folder *root = new Folder("root");
 int ID_number = 1000;
 std::string gettime()
 {
@@ -33,10 +33,6 @@ std::string File::get_Name()
 {
     return this->name;
 }
-std::string File::get_Type()
-{
-    return this->type;
-}
 std::string File::get_Addr()
 {
     return this->addr;
@@ -69,7 +65,6 @@ void File::set_Name_Type(std::string str)
 {
     this->addr = this->addr.replace((this->addr.rfind('\\') + 1), this->name.size(), str);
     this->name = str;
-    this->type = this->name.substr(this->name.find('.') + 1);
     this->Change_time = gettime();
 }
 
@@ -112,7 +107,6 @@ void File::change_Dad(Folder *folder)
 {
     this->dad = folder;
 }
-
 void File::change_Addr(std::string str)
 {
     this->addr = str;
@@ -124,17 +118,6 @@ File::File(std::string str)
     this->name = str;
     this->Create_time = gettime();
     this->Change_time = gettime();
-}
-
-// 拷贝文件
-File *File::copy_File()
-{
-    File file = File();
-    file.name = this->name;
-    file.type = this->type;
-    file.size = this->size;
-    file.content = this->content;
-    return &file;
 }
 
 // 删除文件
@@ -171,7 +154,7 @@ std::string File::file_serialize()
     str += this->name + "$";
     str += this->Create_time + "$";
     str += this->Change_time + "$";
-    str += this->size + "$";
+    str += std::to_string(this->size) + "$";
     return str;
 }
 
@@ -196,8 +179,6 @@ void File::file_deserialize(std::string str)
     this->Create_time = str1[2];
     this->Change_time = str1[3];
     this->size = std::stoi(str1[4]);
-    // 用type截取name中'.'后面部分的内容
-    this->type = this->name.substr(this->name.find('.') + 1);
 }
 
 // 文件内容序列化
@@ -218,7 +199,6 @@ void File::file_con_deserialize(std::string str)
 // 展示文件属性
 void File::show()
 {
-    std::cout << "类型：" << type << std::endl;
     std::cout << "名称：" << name << std::endl;
     std::cout << "地址：" << addr << std::endl;
     std::cout << "大小：" << size << std::endl;
@@ -363,7 +343,7 @@ void Folder::change_Addr(std::string str)
     this->addr = str;
 }
 
-// 无参构造函数
+// 参构造函数
 Folder::Folder(std::string str)
 {
     this->name = str;
@@ -371,23 +351,6 @@ Folder::Folder(std::string str)
     this->addr = str;
     Create_time = gettime();
     Change_time = gettime();
-}
-
-// 拷贝文件夹
-Folder *Folder::copy_Folder()
-{
-    Folder folder = Folder();
-    folder.set_Name(this->name);
-    folder.change_Dad(&folder);
-    for (int i = 0; i < this->get_Folder_child().size(); i++)
-    {
-        folder.Add_folder(this->get_Folder_child()[i]->copy_Folder());
-    }
-    for (int i = 0; i < this->get_File_child().size(); i++)
-    {
-        folder.Add_file(this->get_File_child()[i]->copy_File());
-    }
-    return &Folder();
 }
 
 // 添加文件
@@ -662,7 +625,7 @@ void file_con_ser_gen(Folder *folder, std::string *str)
 std::string file_con_ser()
 {
     std::string str;
-    file_con_ser_gen(&root, &str);
+    file_con_ser_gen(root, &str);
     return str;
 }
 
@@ -673,16 +636,16 @@ void tree_dir_ser_gen(std::string *str)
     std::queue<int> type;
     std::queue<std::string> inform;
     std::queue<Folder *> q;
-    q.push(&root);
-    child_num.push(root.get_Folder_child().size() + root.get_File_child().size());
+    q.push(root);
+    child_num.push(root->get_Folder_child().size() + root->get_File_child().size());
     type.push(1);
-    inform.push(root.folder_serialize());
+    inform.push(root->folder_serialize());
     while (q.empty() == false)
     {
         Folder *folder = q.front();
         q.pop();
         int folder_num = folder->get_Folder_child().size();
-        int file_num = folder->get_Folder_child().size();
+        int file_num = folder->get_File_child().size();
         for (int i = 0; i < folder_num; i++)
         {
             Folder *folder_child_folder = folder->get_Folder_child()[i];
@@ -711,7 +674,7 @@ void tree_dir_ser_gen(std::string *str)
 // 树形目录序列化
 std::string tree_dir_ser()
 {
-    std::string str;
+    std::string str = "";
     tree_dir_ser_gen(&str);
     return str;
 }
@@ -721,8 +684,8 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 {
     std::queue<Folder *> q;
     std::queue<int> q_num;
-    root.folder_deserialize(inform.front());
-    q.push(&root);
+    root->folder_deserialize(inform.front());
+    q.push(root);
     q_num.push(child_num.front());
     type.pop();
     child_num.pop();
@@ -736,11 +699,11 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
             if (type.front() == 1)
             {
                 type.pop();
-                Folder folder_child_folder = Folder();
-                folder_child_folder.folder_deserialize(inform.front());
+                Folder *folder_child_folder = new Folder("新建文件夹");
+                folder_child_folder->folder_deserialize(inform.front());
                 inform.pop();
-                q.front()->Add_folder(&folder_child_folder, 0);
-                q.push(&folder_child_folder);
+                q.front()->Add_folder(folder_child_folder, 0);
+                q.push(folder_child_folder);
                 q_num.push(child_num.front());
                 child_num.pop();
             }
@@ -748,12 +711,13 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
             {
                 type.pop();
                 child_num.pop();
-                File folder_child_file = File();
-                folder_child_file.file_deserialize(inform.front());
+                File *folder_child_file = new File("新建文件");
+                folder_child_file->file_deserialize(inform.front());
                 inform.pop();
-                q.front()->Add_file(&folder_child_file, 0);
+                q.front()->Add_file(folder_child_file, 0);
             }
         }
+        q.pop();
     }
 }
 
@@ -768,7 +732,6 @@ void tree_dir_diser(std::string str)
             if (str[j] == '$' && str[j + 1] == '$')
             {
                 ser_inform.push_back(str.substr(i, j - i));
-                std::cout << str.substr(i, j - i) << std::endl;
                 i = j + 2;
                 break;
             }
@@ -812,4 +775,5 @@ void tree_dir_diser(std::string str)
         child_num.push(std::stoi(str2));
         inform.push(str3);
     }
+    tree_dir_diser_gen(type, child_num, inform);
 }
