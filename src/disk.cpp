@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-03 03:54:53
+ * @LastEditTime : 2024-01-03 04:07:49
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -819,6 +819,38 @@ std::vector<bool> DiskManager::get_disk_block_status()
     }
 
     return disk_block_status;
+}
+
+// qt所需的成组链块情况，返回1024+8大小的int数组（std标准数组），-2表示终止，-1表示组块结束
+std::vector<int> DiskManager::get_group_block_status()
+{
+    // 固定其1024+8大小
+    std::vector<int> group_block_status = std::vector<int>(1024 + 8);
+    // 先将所有块置为-2
+    for (int i = 0; i < 1024 + 8; i++)
+    {
+        group_block_status[i] = -2;
+    }
+
+    // 读成组链块
+    GroupBlock *temp_block = group_block_head;
+    int i = 0;
+    while (temp_block != nullptr)
+    {
+        for(int block_number : temp_block->block_numbers)
+        {
+            group_block_status[i] = block_number;
+            i++;
+        }
+
+        // 下一组
+        temp_block = temp_block->next_group_block;
+        // 用-1标记组块结束，这也就是为什么要多出8个空间的原因
+        group_block_status[i] = -1;
+        i++;
+    }
+
+    return group_block_status;
 }
 
 // int main()
