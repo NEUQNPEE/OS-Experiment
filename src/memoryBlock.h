@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -22,6 +23,17 @@ typedef struct memoryBlock
 // 总计64个内存块
 memoryBlock memory_block[64];
 
+// 用于当前进程的八个内存块的块号
+int block_ids[8];
+
+// 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
+string page_content[1024];
+
+//当前进程调度内存块状况记录。
+//存储的string是第n次页面调度后当前进程在8个内存块中的内容。不同内存块的内容用换行符隔开
+vector<string> clock_record;
+
+
 // 初始化内存块
 void initialMemoryBlock()
 {
@@ -30,4 +42,13 @@ void initialMemoryBlock()
         memory_block[i].block_id = i;
         memory_block[i].begin = i * 40;
     }
+}
+
+//返回当前进程对内存块的调度状况
+vector<string> getProcessRecord()
+{
+    vector<string> temp = clock_record;
+    //清空当前进程调度内存块的记录，以便下一个进程使用
+    clock_record.clear();
+    return temp;
 }
