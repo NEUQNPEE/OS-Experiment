@@ -1,5 +1,215 @@
 #include "HelloWorld.h"
 
+class MemoryWidget : public QWidget
+{
+public:
+    // 初始化函数，生成纯白色，进程id为-1的8*8网格
+    MemoryWidget(QWidget *parent = nullptr) : QWidget(parent)
+    {
+        // 创建一个8x8的网格布局
+        QGridLayout *gridLayout = new QGridLayout(this);
+        gridLayout->setSpacing(2);
+
+        // 生成纯白色，进程id为-1的8*8网格
+        for (int row = 0; row < 8; ++row)
+        {
+            for (int col = 0; col < 8; ++col)
+            {
+                // 创建一个标签，显示进程ID，并设置背景颜色
+                QLabel *label = new QLabel(QString::number(-1), this);
+                label->setAlignment(Qt::AlignCenter);
+                label->setStyleSheet("background-color: white");
+
+                // 给标签设置一个边框
+                label->setFrameStyle(QFrame::Box | QFrame::Raised);
+
+                // 将标签添加到网格布局中
+                gridLayout->addWidget(label, row, col);
+            }
+        }
+    }
+
+    // 供外部调用的绘制函数，参数为进程ID和内存块号
+    void draw(int processId, int blockNumber)
+    {
+        // 首先检查进程ID是否已经存在于映射中
+        if (colorMap.find(processId) == colorMap.end())
+        {
+            // 如果不存在，则生成一个随机颜色
+            QColor color = generateRandomColor();
+
+            // 将进程ID和颜色添加到映射中
+            colorMap[processId] = color;
+        }
+
+        // 获取进程ID对应的颜色
+        QColor color = colorMap[processId];
+
+        // 获取网格布局
+        QGridLayout *gridLayout = static_cast<QGridLayout *>(this->layout());
+
+        // 获取内存块号对应的标签
+        QLabel *label = static_cast<QLabel *>(gridLayout->itemAtPosition(blockNumber / 8, blockNumber % 8)->widget());
+
+        // 设置标签的背景颜色与进程ID
+        label->setStyleSheet(QString("background-color: %1").arg(color.name()));
+        label->setText(QString::number(processId));
+    }
+
+private:
+    // 存储进程ID和颜色的映射
+    std::map<int, QColor> colorMap;
+
+    // 生成随机颜色，但不为黑白两色
+    QColor generateRandomColor()
+    {
+        int r, g, b;
+        do
+        {
+            r = rand() % 256;
+            g = rand() % 256;
+            b = rand() % 256;
+        } while (isBlackOrWhite(r, g, b));
+
+        return QColor(r, g, b);
+    }
+
+    bool isBlackOrWhite(int r, int g, int b)
+    {
+        // 判断颜色是否为黑色或白色
+        return (r < 10 && g < 10 && b < 10) || (r > 245 && g > 245 && b > 245);
+    }
+};
+
+class DiskWidget : public QWidget
+{
+    private:
+    // 兑换区和文件区的指针，便于后续操作
+    QGridLayout *exchangeGridLayout;
+    QGridLayout *fileGridLayout;
+
+public:
+    // 初始化函数
+    DiskWidget(QWidget *parent = nullptr) : QWidget(parent)
+    {
+        // 创建整体布局
+        QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+        // 创建 QSplitter，用于分割兑换区和文件区
+        QSplitter *splitter = new QSplitter(this);
+        mainLayout->addWidget(splitter);
+
+        // 创建兑换区部件
+        QFrame *exchangeFrame = new QFrame();
+        exchangeFrame->setFrameStyle(QFrame::Box | QFrame::Raised); // 设置边框样式为凸起的方框
+        exchangeFrame->setLineWidth(2);                             // 设置边框宽度
+        QVBoxLayout *exchangeLayout = new QVBoxLayout(exchangeFrame);
+        exchangeLayout->setContentsMargins(5, 5, 5, 5); // 设置布局边距
+
+        // 兑换区名称标签
+        QLabel *exchangeLabel = new QLabel("兑换区", exchangeFrame);
+        exchangeLabel->setAlignment(Qt::AlignCenter);
+        exchangeLayout->addWidget(exchangeLabel);
+
+        // 创建文件区部件
+        QFrame *fileFrame = new QFrame();
+        fileFrame->setFrameStyle(QFrame::Box | QFrame::Raised); // 设置边框样式为凸起的方框
+        fileFrame->setLineWidth(2);                             // 设置边框宽度
+        QVBoxLayout *fileLayout = new QVBoxLayout(fileFrame);
+        fileLayout->setContentsMargins(5, 5, 5, 5); // 设置布局边距
+
+        // 文件区名称标签
+        QLabel *fileLabel = new QLabel("文件区", fileFrame);
+        fileLabel->setAlignment(Qt::AlignCenter);
+        fileLayout->addWidget(fileLabel);
+
+        // 创建兑换区布局（31行4列的网格布局）
+        exchangeGridLayout = new QGridLayout();
+        exchangeGridLayout->setSpacing(2);
+        exchangeLayout->addLayout(exchangeGridLayout);
+
+        // 创建文件区布局（30行30列的网格布局）
+        fileGridLayout = new QGridLayout();
+        fileGridLayout->setSpacing(2);
+        fileLayout->addLayout(fileGridLayout);
+
+        // 生成空白的兑换区和文件区
+        for (int row = 0; row < 31; ++row)
+        {
+            for (int col = 0; col < 4; ++col)
+            {
+                QLabel *label = new QLabel(this);
+                label->setAlignment(Qt::AlignCenter);
+                label->setStyleSheet(QString("background-color: white"));
+
+                // 边框
+                label->setFrameStyle(QFrame::Box | QFrame::Raised);
+
+                // 标签大小最小为10x10
+                label->setMinimumSize(10, 10);
+
+                // 将标签添加到兑换区网格布局中
+                exchangeGridLayout->addWidget(label, row, col);
+            }
+        }
+
+        for (int row = 0; row < 30; ++row)
+        {
+            for (int col = 0; col < 30; ++col)
+            {
+                QLabel *label = new QLabel(this);
+                label->setAlignment(Qt::AlignCenter);
+                label->setStyleSheet(QString("background-color: white"));
+
+                // 边框
+                label->setFrameStyle(QFrame::Box | QFrame::Raised);
+
+                // 标签大小最小为10x10
+                label->setMinimumSize(10, 10);
+
+                // 将标签添加到文件区网格布局中
+                fileGridLayout->addWidget(label, row, col);
+            }
+        }
+
+        // 将兑换区和文件区添加到分割器中
+        splitter->addWidget(exchangeFrame);
+        splitter->addWidget(fileFrame);
+        splitter->setSizes(QList<int>() << this->width() / 5 << this->width() * 4 / 5);
+    }
+
+    // 供外部调用的绘制函数，参数为是否占用和块号
+    void draw(bool isOccupied, int blockNumber)
+    {
+
+        // 获取网格布局中的标签
+        QLabel *label = nullptr;
+        if (blockNumber < 124)
+        {
+            // 如果块号小于124，则为兑换区
+            label = static_cast<QLabel *>(exchangeGridLayout->itemAtPosition(blockNumber / 4, blockNumber % 4)->widget());
+        }
+        else
+        {
+            // 否则为文件区
+            label = static_cast<QLabel *>(fileGridLayout->itemAtPosition((blockNumber - 124) / 30, (blockNumber - 124) % 30)->widget());
+        }
+
+        // 设置标签的背景颜色
+        if (isOccupied)
+        {
+            label->setStyleSheet(QString("background-color: blue"));
+        }
+        else
+        {
+            label->setStyleSheet(QString("background-color: white"));
+        }
+
+        // 更新标签
+        label->update();
+    }
+};
+
 HelloWorld::HelloWorld(QWidget *parent)
     : QMainWindow(parent), ui(new Ui_HelloWorld)
 {
@@ -254,9 +464,40 @@ void HelloWorld::showTaskManager()
     taskManagerWindow->setWindowTitle("任务管理器");
     taskManagerWindow->resize(600, 400); // 根据需要调整大小
 
-    // 创建一个表格并设置其布局
-    QTableWidget *tableWidget = new QTableWidget(0, 5, taskManagerWindow); // 5列
-    QStringList headers = {"任务名称", "任务状态", "CPU", "内存", "磁盘"};
+    // 在任务管理器窗口中添加三个栏目：进程、内存和磁盘
+    QTabWidget *tabWidget = new QTabWidget(taskManagerWindow);
+    tabWidget->setTabsClosable(false); // 禁止关闭选项卡
+    tabWidget->setMovable(true);       // 允许拖动选项卡
+
+    // 选项卡放在顶部
+    tabWidget->setTabPosition(QTabWidget::North);
+
+    // 创建三个选项卡
+    QWidget *processTab = new QWidget(tabWidget);
+    QWidget *memoryTab = new QWidget(tabWidget);
+    QWidget *diskTab = new QWidget(tabWidget);
+
+    // 创建布局管理器
+    QVBoxLayout *processLayout = new QVBoxLayout(processTab);
+    QVBoxLayout *memoryLayout = new QVBoxLayout(memoryTab);
+    QVBoxLayout *diskLayout = new QVBoxLayout(diskTab);
+
+    // 将布局管理器设置给选项卡
+    processTab->setLayout(processLayout);
+    memoryTab->setLayout(memoryLayout);
+    diskTab->setLayout(diskLayout);
+
+    // 将选项卡添加到选项卡窗口中
+    tabWidget->addTab(processTab, "进程");
+    tabWidget->addTab(memoryTab, "内存");
+    tabWidget->addTab(diskTab, "磁盘");
+
+    // 将选项卡窗口设置为任务管理器窗口的中心部件
+    taskManagerWindow->setCentralWidget(tabWidget);
+
+    // 创建进程表格
+    QTableWidget *tableWidget = new QTableWidget(0, 4, taskManagerWindow); // 4列
+    QStringList headers = {"任务名称", "任务状态", "内存", "磁盘"};
     tableWidget->setHorizontalHeaderLabels(headers);
     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 使列自动拉伸以填充整个宽度
 
@@ -269,12 +510,33 @@ void HelloWorld::showTaskManager()
         // 其他列也可以这样设置
     }
 
-    // 使用布局管理器将表格添加到窗口中
-    QWidget *centralWidget = new QWidget(taskManagerWindow);
-    QVBoxLayout *layout = new QVBoxLayout(centralWidget);
-    layout->addWidget(tableWidget);
-    centralWidget->setLayout(layout);
-    taskManagerWindow->setCentralWidget(centralWidget);
+    // 将进程表格添加到进程选项卡中
+    processLayout->addWidget(tableWidget);
+
+    // 创建内存UI，8*8网格，每个网格中显示一个占用该内存块的进程id，被同一个进程占用的内存块显示为同一种颜色（随机生成但不为黑白两色）
+    MemoryWidget *memoryWidget = new MemoryWidget(memoryTab);
+    memoryLayout->addWidget(memoryWidget);
+
+    // 创建磁盘UI，显示磁盘的使用情况，左边有一个小长方形显示124块兑换区的使用情况，右边有一个大一点的长方形显示文件区的使用情况
+    // 如果某一块被占用，则显示为蓝色，否则显示为白色
+    DiskWidget *diskWidget = new DiskWidget(diskTab);
+    diskLayout->addWidget(diskWidget);
+
+    // 测试用例：将内存块号为0-7的内存块分配给进程1，内存块号为8-15的内存块分配给进程2
+    for (int i = 0; i < 8; ++i)
+    {
+        memoryWidget->draw(1, i);
+    }
+    for (int i = 8; i < 16; ++i)
+    {
+        memoryWidget->draw(2, i);
+    }
+
+    // 测试用例：将0-123号磁盘块改为占用状态
+    for (int i = 0; i < 124; ++i)
+    {
+        diskWidget->draw(true, i);
+    }
 
     // 显示任务管理器窗口
     taskManagerWindow->show();

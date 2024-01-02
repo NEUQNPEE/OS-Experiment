@@ -15,6 +15,8 @@
 #include <QHeaderView>
 #include <QTreeView>
 #include <QFileSystemModel>
+#include <QPainter>
+#include <QSplitter>
 class HelloWorld : public QMainWindow
 {
     Q_OBJECT
