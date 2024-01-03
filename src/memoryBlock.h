@@ -18,6 +18,8 @@ typedef struct memoryBlock
     int page_id = -1;
     //所存文件的所有页是否都在内存里
     bool file_all_in_memory = true;
+    //所属的进程的进程ID
+    int process_id = -1;
 } memoryBlock;
 
 // 总计64个内存块
@@ -43,6 +45,12 @@ void initialMemoryBlock()
         memory_block[i].begin = i * 40;
     }
 }
+
+//创建进程时分配内存块,返回值标明是否分配成功
+bool initialBlock_ids(int process_id);
+
+//撤销进程时释放内存块
+void clearBlock_ids(int process_id);
 
 //返回当前进程对内存块的调度状况
 vector<string> getProcessRecord()

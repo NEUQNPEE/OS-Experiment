@@ -33,6 +33,8 @@ void initialMemory()
     fill(memory, memory + 2560, ' ');
     // 初始化内存块
     initialMemoryBlock();
+    // 初始化记录当前进程所占八个内存块块号的数组
+    fill(block_ids, block_ids + 8, -1);
     // 初始化磁盘
     disk.init_disk();
     // 初始化FAT表
@@ -41,8 +43,8 @@ void initialMemory()
     dir_info = "";
 }
 
-// 决定由哪八个内存块装入文件
-void initialBlock_ids()
+// 为进程分配八个内存块
+bool initialBlock_ids(int write_process_id)
 {
     // 初始化FAT表，以防FAT表有更新
     fat_list = disk.get_fat_block_numbers();
@@ -54,7 +56,8 @@ void initialBlock_ids()
             if (j == 64)
             {
                 cout << "警告!已无空闲内存块!内存溢出!";
-                exit(0);
+                fill(block_ids, block_ids + 8, -1);
+                return false;
             }
             if (memory_block[j].page_id < 0)
             {
@@ -63,44 +66,68 @@ void initialBlock_ids()
             }
         }
     }
-}
-
-// 释放装文件的八个内存块
-void clearBlock_ids()
-{
+    // 八个内存块记录当前进程的ID
     for (int i = 0; i < 8; i++)
     {
-        memory_block[block_ids[i]].page_id = -1;
-        memory_block[block_ids[i]].status = 0;
-        memory_block[block_ids[i]].file_all_in_memory = true;
+        memory_block[block_ids[i]].process_id = write_process_id;
     }
-    // 顺带把暂存页内容的page_content清空
-    fill(page_content, page_content + 1024, "");
-    //顺带把当前进程调度内存块的状况清空
-    //clock_record.clear();
+    return true;
 }
 
-//记录内存块调度状况
+// 释放进程占用的八个内存块
+void clearBlock_ids(int clear_process_id)
+{
+    //当前进程是否为释放内存块的进程
+    for (int i = 0; i < 8; i++)
+    {
+        if (memory_block[block_ids[i]].process_id == clear_process_id)
+        {
+            memory_block[block_ids[i]].page_id = -1;
+            memory_block[block_ids[i]].status = 0;
+            memory_block[block_ids[i]].process_id = -1;
+            block_ids[i] = -1;
+        }
+    }
+    //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
+    for(int i = 0; i < 64; i++)
+    {
+        if(memory_block[i].process_id == clear_process_id)
+        {
+            memory_block[i].page_id = -1;
+            memory_block[i].status = 0;
+            memory_block[i].process_id = -1;
+        }
+    }
+
+    // 顺带把暂存页内容的page_content清空
+    fill(page_content, page_content + 1024, "");
+    // 顺带把当前进程调度内存块的状况清空
+    // clock_record.clear();
+}
+
+// 记录内存块调度状况
 void recordBlock_ids()
 {
     string ans = "";
     for (int i = 0; i < 8; i++)
     {
-        //判断内存块是否装页
-        if(memory_block[block_ids[i]].page_id < 0)continue;
+        // 判断内存块是否装页
+        if (memory_block[block_ids[i]].page_id < 0)
+            continue;
 
         ans = ans + "块号:" + to_string(block_ids[i]) + ',';
         ans = ans + "页号:" + to_string(memory_block[block_ids[i]].page_id) + ',';
         ans = ans + "内容:";
-        for(int i = memory_block[block_ids[i]].begin; (i - memory_block[block_ids[i]].begin) < 40; i++)
+        for (int i = memory_block[block_ids[i]].begin; (i - memory_block[block_ids[i]].begin) < 40; i++)
         {
             ans = ans + memory[i];
         }
         ans = ans + "\n";
     }
-    //判断调度状况是否为空
-    if(ans == "")return;
-    //将调度情况插入当前进程调度内存块状况的vector数组
+    // 判断调度状况是否为空
+    if (ans == "")
+        return;
+    // 将调度情况插入当前进程调度内存块状况的vector数组
     clock_record.push_back(ans);
 }
 
@@ -199,7 +226,7 @@ int CLOCK(int page)
 void WriteFile(string file_id, string file_content, char *write_dir_info)
 {
     // 搜索由哪八个内存块负责装文件
-    initialBlock_ids();
+    // initialBlock_ids();
 
     string ans = "";
     // 文件分页并装入内存
@@ -238,7 +265,7 @@ void WriteFile(string file_id, string file_content, char *write_dir_info)
     // 更新目录信息
     disk.save_dir_info(write_dir_info);
     // 释放内存
-    clearBlock_ids();
+    //clearBlock_ids();
 }
 
 // 从磁盘读取文件内容
@@ -263,7 +290,7 @@ char *ReadMemoryBlock(int memory_block_id, int size)
 string ReadFile(string file_id)
 {
     // 搜索由哪八个内存块负责装文件
-    initialBlock_ids();
+    // initialBlock_ids();
 
     // 查找文件id对应的磁盘块id
     int block_id = -1;
@@ -308,7 +335,7 @@ string ReadFile(string file_id)
     }
 
     // 释放内存
-    clearBlock_ids();
+    //clearBlock_ids();
 
     // return ans;
     return file_content;
@@ -330,4 +357,3 @@ void DeleteFile(string file_id)
     }
     disk.delete_file_info(block_id);
 }
-
