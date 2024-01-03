@@ -192,7 +192,7 @@ Folder *folder_change_name(Folder *folder, std::string name);
 File *file_change_name(File *file, std::string name);
 
 // 改文件内容
-File *file_change_content(File *file, std::string content);
+File *file_change_content(File *file, std::string content, int p_id);
 
 // 获得文件夹的子文件夹
 std::vector<Folder *> get_folder_child(Folder *folder);
@@ -201,7 +201,7 @@ std::vector<Folder *> get_folder_child(Folder *folder);
 std::vector<File *> get_file_child(Folder *folder);
 
 // 打开文件
-std::string look_file_content(File *file);
+std::string look_file_content(File *file, int p_id);
 
 // 查看文件属性
 std::vector<std::string> look_file(File *file);

@@ -848,7 +848,7 @@ void delete_folder(Folder *folder)
 void delete_file(File *file)
 {
     file->delete_File();
-    DeleteFile(std::to_string(file->get_ID()));
+    DeleteFile(file->get_ID());
     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
 }
 
@@ -869,10 +869,10 @@ File *file_change_name(File *file, std::string name)
 }
 
 // 改文件内容
-File *file_change_content(File *file, std::string content)
+File *file_change_content(File *file, std::string content, int p_id)
 {
     file->set_Content(content);
-    WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
+    WriteFile(file->get_ID(), content, gotoChar(tree_dir_ser()), p_id);
     return file;
 }
 
@@ -889,9 +889,9 @@ std::vector<File *> get_file_child(Folder *folder)
 }
 
 // 打开文件
-std::string look_file_content(File *file)
+std::string look_file_content(File *file, int p_id)
 {
-    return ReadFile(std::to_string(file->get_ID()));
+    return ReadFile(file->get_ID(), p_id);
 }
 
 // 查看文件属性
