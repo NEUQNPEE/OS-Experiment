@@ -154,7 +154,7 @@ public:
 };
 
 // 树形目录序列化生成
-void tree_dir_ser_gen(std::string str);
+void tree_dir_ser_gen(std::string *str);
 
 // 树形目录序列化
 std::string tree_dir_ser();
@@ -166,19 +166,19 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 void tree_dir_diser(std::string str);
 
 // 初始化函数
-Folder *init();
+Folder *init_root();
 
 // 判断文件夹是否重名
 bool folder_is_repeat(Folder *folder, std::string str);
 
 // 判断文件是否重名接口
-bool is_repeat(Folder *folder, std::string str);
+bool file_is_repeat(Folder *folder, std::string str);
 
 // 添加文件接口
-File *add_file(Folder *folder, std::string str);
+File *folder_add_file(Folder *folder, std::string str);
 
 // 添加文件夹接口
-Folder *add_folder(Folder *folder, std::string str);
+Folder *folder_add_folder(Folder *folder, std::string str);
 
 // 删除文件夹
 void delete_folder(Folder *folder);

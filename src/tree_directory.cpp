@@ -1,7 +1,5 @@
 #include "tree_directory.h"
-
 #include "memory.h"
-
 Folder *root = new Folder("root");
 std::string gettime()
 {
@@ -71,7 +69,6 @@ std::string File::get_Content()
 
     // return ReadFile(std::to_string(this->ID));
     return "";
-
 }
 Folder *File::get_Dad()
 {
@@ -796,12 +793,11 @@ void tree_dir_diser(std::string str)
 
 // 初始化函数
 
-Folder *init()
+Folder *init_root()
 {
     tree_dir_diser(gotoString(ReadDirectoryInfo()));
     return root;
 }
-
 
 // 判断文件夹是否重名
 bool folder_is_repeat(Folder *folder, std::string str)
@@ -830,7 +826,7 @@ bool file_is_repeat(Folder *folder, std::string str)
 
 // 添加文件接口
 
-File *add_file(Folder *folder, std::string str)
+File *folder_add_file(Folder *folder, std::string str)
 {
     File *file = new File(str);
     folder->Add_file(file);
@@ -839,7 +835,7 @@ File *add_file(Folder *folder, std::string str)
 }
 
 // 添加文件夹接口
-Folder *add_folder(Folder *folder, std::string str)
+Folder *folder_add_folder(Folder *folder, std::string str)
 {
     Folder *child_folder = new Folder(str);
     folder->Add_folder(child_folder);
@@ -885,7 +881,6 @@ File *file_change_content(File *file, std::string content)
     WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
     return file;
 }
-
 
 // 获得文件夹的子文件夹
 std::vector<Folder *> get_folder_child(Folder *folder)
