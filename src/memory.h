@@ -20,4 +20,3 @@ string ReadFile(string file_id);
 
 // 用户删除文件。请传入删除文件的ID
 void DeleteFile(string file_id);
-

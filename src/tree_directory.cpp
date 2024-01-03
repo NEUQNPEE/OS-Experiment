@@ -64,12 +64,6 @@ std::string File::get_Change_time()
 {
     return this->Change_time;
 }
-std::string File::get_Content()
-{
-
-    // return ReadFile(std::to_string(this->ID));
-    return "";
-}
 Folder *File::get_Dad()
 {
     return this->dad;
@@ -897,7 +891,7 @@ std::vector<File *> get_file_child(Folder *folder)
 // 打开文件
 std::string look_file_content(File *file)
 {
-    return file->get_Content();
+    return ReadFile(std::to_string(file->get_ID()));
 }
 
 // 查看文件属性

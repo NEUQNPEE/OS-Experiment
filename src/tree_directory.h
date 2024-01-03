@@ -48,7 +48,6 @@ public:
     int get_Size();
     std::string get_Create_time();
     std::string get_Change_time();
-    std::string get_Content();
     Folder *get_Dad();
 
     // 写文件属性函数
