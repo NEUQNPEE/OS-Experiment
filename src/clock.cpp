@@ -3,14 +3,14 @@
 #include "memory.h"
 #include "memoryBlock.h"
 #include "disk.h"
-#include "process_manager.h"
+// #include "process_manager.h"
 
 using namespace std;
 
 // 用于装入文件的八个内存块的块号
-int block_ids[8];
+// int block_ids[8];
 // 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
-string page_content[1024];
+// string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
@@ -44,72 +44,72 @@ void initialMemory()
     dir_info = "";
 }
 
-// 为进程分配八个内存块
-bool initialBlock_ids(Process* &write_process)
-{
-    // 初始化FAT表，以防FAT表有更新
-    fat_list = disk.get_fat_block_numbers();
-    // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
-    for (int i = 0; i < 8; i++)
-    {
-        for (int j = 0; j <= 64; j++)
-        {
-            if (j == 64)
-            {
-                cout << "警告!已无空闲内存块!内存溢出!";
-                fill(block_ids, block_ids + 8, -1);
-                return false;
-            }
-            if (memory_block[j].page_id < 0)
-            {
-                block_ids[i] = memory_block[j].block_id;
-                break;
-            }
-        }
-    }
-    // 八个内存块记录当前进程的ID
-    for (int i = 0; i < 8; i++)
-    {
-        memory_block[block_ids[i]].process_id = write_process->pid;
-    }
-    //八个内存块的块号写入进程对象
-    generate(block_ids, block_ids + 8, write_process->allocatedMemory);
+// // 为进程分配八个内存块
+// bool initialBlock_ids(Process* &write_process)
+// {
+//     // 初始化FAT表，以防FAT表有更新
+//     fat_list = disk.get_fat_block_numbers();
+//     // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
+//     for (int i = 0; i < 8; i++)
+//     {
+//         for (int j = 0; j <= 64; j++)
+//         {
+//             if (j == 64)
+//             {
+//                 cout << "警告!已无空闲内存块!内存溢出!";
+//                 fill(block_ids, block_ids + 8, -1);
+//                 return false;
+//             }
+//             if (memory_block[j].page_id < 0)
+//             {
+//                 block_ids[i] = memory_block[j].block_id;
+//                 break;
+//             }
+//         }
+//     }
+//     // 八个内存块记录当前进程的ID
+//     for (int i = 0; i < 8; i++)
+//     {
+//         memory_block[block_ids[i]].process_id = write_process->pid;
+//     }
+//     //八个内存块的块号写入进程对象
+//     generate(block_ids, block_ids + 8, write_process->allocatedMemory);
 
-    return true;
-}
+//     return true;
+// }
 
-// 释放进程占用的八个内存块
-void clearBlock_ids(Process* &clear_process)
-{
-    //当前进程是否为释放内存块的进程
-    for (int i = 0; i < 8; i++)
-    {
-        if (memory_block[block_ids[i]].process_id == clear_process->pid)
-        {
-            memory_block[block_ids[i]].page_id = -1;
-            memory_block[block_ids[i]].status = 0;
-            memory_block[block_ids[i]].process_id = -1;
-            block_ids[i] = -1;
-        }
-    }
-    //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
-    for(int i = 0; i < 64; i++)
-    {
-        if(memory_block[i].process_id == clear_process->pid)
-        {
-            memory_block[i].page_id = -1;
-            memory_block[i].status = 0;
-            memory_block[i].process_id = -1;
-        }
-    }
+// // 释放进程占用的八个内存块
+// void clearBlock_ids(Process* &clear_process)
+// {
+//     //当前进程是否为释放内存块的进程
+//     for (int i = 0; i < 8; i++)
+//     {
+//         if (memory_block[block_ids[i]].process_id == clear_process->pid)
+//         {
+//             memory_block[block_ids[i]].page_id = -1;
+//             memory_block[block_ids[i]].status = 0;
+//             memory_block[block_ids[i]].process_id = -1;
+//             block_ids[i] = -1;
+//         }
+//     }
+//     //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
+//     for(int i = 0; i < 64; i++)
+//     {
+//         if(memory_block[i].process_id == clear_process->pid)
+//         {
+//             memory_block[i].page_id = -1;
+//             memory_block[i].status = 0;
+//             memory_block[i].process_id = -1;
+//         }
+//     }
 
-    //清空释放进程的内存块地址
-    clear_process->allocatedMemory.clear();
-    // 顺带把暂存页内容的page_content清空
-    fill(page_content, page_content + 1024, "");
-    // 顺带把当前进程调度内存块的状况清空
-    // clock_record.clear();
-}
+//     //清空释放进程的内存块地址
+//     clear_process->allocatedMemory.clear();
+//     // 顺带把暂存页内容的page_content清空
+//     fill(page_content, page_content + 1024, "");
+//     // 顺带把当前进程调度内存块的状况清空
+//     // clock_record.clear();
+// }
 
 // 记录内存块调度状况
 void recordBlock_ids()
