@@ -1,7 +1,9 @@
+#include <utility>
+
 #include "process_manager.h"
 
 
-NamedPipe::NamedPipe(const std::string &name) : pipeName(name) {
+NamedPipe::NamedPipe(std::string name) : pipeName(std::move(name)) {
     // 创建或打开文件作为命名管道
     fileDescriptor = open(pipeName.c_str(), O_RDWR | O_CREAT, 0666);
 }
@@ -19,7 +21,7 @@ void NamedPipe::writeData(const std::string &data) const {
 }
 
 // 从命名管道读取数据
-std::string NamedPipe::readData() {
+std::string NamedPipe::readData() const {
     const int bufferSize = 1024;
     char buffer[bufferSize];
     ssize_t bytesRead = read(fileDescriptor, buffer, bufferSize - 1);
@@ -129,7 +131,7 @@ void DataGenerationProcess::destroy() {
 }
 
 void DataGenerationProcess::judge_is_repeat(Folder *folder, std::string str) {
-    if (is_repeat(folder, str)) {
+    if (is_repeat(folder, std::move(str))) {
         //todo 在这里向QT发送重名信息
         return;
     }
