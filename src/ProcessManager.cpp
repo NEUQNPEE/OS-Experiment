@@ -1,6 +1,7 @@
 #include <utility>
 
 #include "process_manager.h"
+#include "memoryBlock.h"
 
 ProcessManager processManager;
 
@@ -59,184 +60,196 @@ void ProcessManager::deleteProcess(int pid) {
     }
 }
 
- // 构造方法
- InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
-         : Process(name, pid, priority, ProcessState::RUNNING, type) {}
+// 构造方法
+InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
+        : Process(name, pid, priority, ProcessState::RUNNING, type) {}
 
- InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
-     auto *initProcess = new InitProcess(name, pid, priority, processType);
-     // 将该进程放入进程列表
-     processManager.processList.push_back(initProcess);
-     return *initProcess;
- }
+InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
+    auto *initProcess = new InitProcess(name, pid, priority, processType);
+    // 将该进程放入进程列表
+    processManager.processList.push_back(initProcess);
+    return *initProcess;
+}
 
- void InitProcess::execute() {
-     Folder *folder = init_root();
-     //todo 在这里向QT发送folder指针
- }
+void InitProcess::execute() {
+    Folder *folder = init_root();
+    //todo 在这里向QT发送folder指针
+}
 
- void InitProcess::destroy() {
-//     clearBlock_ids(this->pid);
-     // 从进程列表中删除该进程
-     processManager.deleteProcess(this->pid);
-     // 销毁对象
-     delete this;
- }
+void InitProcess::destroy() {
+//    clearBlock_ids(this->pid);
+    // 从进程列表中删除该进程
+    processManager.deleteProcess(this->pid);
+    // 销毁对象
+    delete this;
+}
 
 
- // 构造方法
- DataGenerationProcess::DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-         : Process(name, pid, priority, state, type) {}
+// 构造方法
+DataGenerationProcess::DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
+        : Process(name, pid, priority, state, type) {}
 
- void DataGenerationProcess::
- create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
-     auto *dataGenerationProcess = new DataGenerationProcess(name, pid, priority, ProcessState::READY,
-                                                             ProcessType::DATA_GENERATION_PROCESS);
-     dataGenerationProcess->fileInfo.fileName = fileInfo->fileName;
-     dataGenerationProcess->fileInfo.folder = fileInfo->folder;
-     dataGenerationProcess->command = command;
-     // 将该进程放入进程列表,就绪队列
-     processManager.processList.push_back(dataGenerationProcess);
-     processManager.readyQueue.push(dataGenerationProcess);
- }
+void DataGenerationProcess::
+create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
+    auto *dataGenerationProcess = new DataGenerationProcess(name, pid, priority, ProcessState::READY,
+                                                            ProcessType::DATA_GENERATION_PROCESS);
+    dataGenerationProcess->fileInfo.fileName = fileInfo->fileName;
+    dataGenerationProcess->fileInfo.folder = fileInfo->folder;
+    dataGenerationProcess->command = command;
+    // 将该进程放入进程列表,就绪队列
+    processManager.processList.push_back(dataGenerationProcess);
+    processManager.readyQueue.push(dataGenerationProcess);
+}
 
- void DataGenerationProcess::execute() {
-     switch (command) {
-         case OperationCommand::CREATE_FOLDER: {
-             folder_add_folder(fileInfo.folder, *fileInfo.fileName);
-             break;
-         }
-         case OperationCommand::CREATE_FILE: {
-             folder_add_file(fileInfo.folder, *fileInfo.fileName);
-             break;
-         }
-         case OperationCommand::RENAME_FOLDER: {
-             if(folder_is_repeat(fileInfo.folder, *fileInfo.fileName)){
-                 //todo 在这里向QT发送重名信息
-                 return;
-             }
-             folder_change_name(fileInfo.folder, *fileInfo.fileName);
-             break;
-         }
-         case OperationCommand::RENAME_FILE: {
-                if(file_is_repeat(fileInfo.folder, *fileInfo.fileName)){
-                    //todo 在这里向QT发送重名信息
-                    return;
-                }
-             file_change_name(fileInfo.file, *fileInfo.fileName);
-             break;
-         }
-         default:
-             break;
-     }
- }
+void DataGenerationProcess::execute() {
+    switch (command) {
+        case OperationCommand::CREATE_FOLDER: {
+            folder_add_folder(fileInfo.folder, *fileInfo.fileName);
+            break;
+        }
+        case OperationCommand::CREATE_FILE: {
+            folder_add_file(fileInfo.folder, *fileInfo.fileName);
+            break;
+        }
+        case OperationCommand::RENAME_FOLDER: {
+            if (folder_is_repeat(fileInfo.folder, *fileInfo.fileName)) {
+                //todo 在这里向QT发送重名信息
+                return;
+            }
+            folder_change_name(fileInfo.folder, *fileInfo.fileName);
+            break;
+        }
+        case OperationCommand::RENAME_FILE: {
+            if (file_is_repeat(fileInfo.folder, *fileInfo.fileName)) {
+                //todo 在这里向QT发送重名信息
+                return;
+            }
+            file_change_name(fileInfo.file, *fileInfo.fileName);
+            break;
+        }
+        default:
+            break;
+    }
+}
 
- void DataGenerationProcess::destroy() {
-     // 从进程列表中删除该进程
-     processManager.deleteProcess(this->pid);
-     // 销毁对象
-     delete this;
- }
+void DataGenerationProcess::destroy() {
+    // 从进程列表中删除该进程
+    processManager.deleteProcess(this->pid);
+    // 销毁对象
+    delete this;
+}
 
- // 构造方法
- DataDeletionProcess::DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-         : Process(name, pid, priority, state, type) {}
+// 构造方法
+DataDeletionProcess::DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
+        : Process(name, pid, priority, state, type) {}
 
- void DataDeletionProcess::
- create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
-     auto *dataDeletionProcess = new DataDeletionProcess(name, pid, priority, ProcessState::READY,
-                                                         ProcessType::DATA_DELETION_PROCESS);
-     dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
-     dataDeletionProcess->fileInfo.folder = fileInfo->folder;
-     dataDeletionProcess->command = command;
-     // 将该进程放入进程列表,就绪队列
-     processManager.processList.push_back(dataDeletionProcess);
-     processManager.readyQueue.push(dataDeletionProcess);
- }
+void DataDeletionProcess::
+create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
+    auto *dataDeletionProcess = new DataDeletionProcess(name, pid, priority, ProcessState::READY,
+                                                        ProcessType::DATA_DELETION_PROCESS);
+    dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
+    dataDeletionProcess->fileInfo.folder = fileInfo->folder;
+    dataDeletionProcess->command = command;
+    // 将该进程放入进程列表,就绪队列
+    processManager.processList.push_back(dataDeletionProcess);
+    processManager.readyQueue.push(dataDeletionProcess);
+}
 
- void DataDeletionProcess::execute() {
-     switch (command) {
-         case OperationCommand::DELETE_FOLDER: {
-              delete_folder(fileInfo.folder);
-             break;
-         }
-         case OperationCommand::DELETE_FILE: {
-              delete_file(fileInfo.file);
-             break;
-         }
-         default:
-             break;
-     }
- }
+void DataDeletionProcess::execute() {
+    switch (command) {
+        case OperationCommand::DELETE_FOLDER: {
+            delete_folder(fileInfo.folder);
+            break;
+        }
+        case OperationCommand::DELETE_FILE: {
+            delete_file(fileInfo.file);
+            break;
+        }
+        default:
+            break;
+    }
+}
 
- void DataDeletionProcess::destroy() {
-     // 从进程列表中删除该进程
-     processManager.deleteProcess(this->pid);
-     // 销毁对象
-     delete this;
- }
+void DataDeletionProcess::destroy() {
+    // 从进程列表中删除该进程
+    processManager.deleteProcess(this->pid);
+    // 销毁对象
+    delete this;
+}
 
- // 构造方法
- ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-         : Process(name, pid, priority, state, type) {}
+// 构造方法
+ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
+        : Process(name, pid, priority, state, type) {}
 
- void ExecutionProcess::send_data_to_pipe(const std::string &data, const std::string &pipeName) {
-     NamedPipe pipe(pipeName);
-     pipe.writeData(data);
- }
+void ExecutionProcess::send_data_to_pipe(const std::string &data, const std::string &pipeName) {
+    NamedPipe pipe(pipeName);
+    pipe.writeData(data);
+}
 
- std::string ExecutionProcess::receive_data_from_pipe(const std::string &pipeName) {
-     NamedPipe pipe(pipeName);
-     return pipe.readData();
- }
+std::string ExecutionProcess::receive_data_from_pipe(const std::string &pipeName) {
+    NamedPipe pipe(pipeName);
+    return pipe.readData();
+}
 
- void ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
-     auto *executionProcess = new ExecutionProcess(name, pid, priority, ProcessState::READY,
-                                                   ProcessType::EXECUTION_PROCESS);
-     executionProcess->fileInfo.file = fileInfo->file;
-     executionProcess->command = command;
-     //todo 申请内存
+void ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
+    auto *executionProcess = new ExecutionProcess(name, pid, priority, ProcessState::READY,
+                                                  ProcessType::EXECUTION_PROCESS);
+    executionProcess->fileInfo.file = fileInfo->file;
+    executionProcess->command = command;
+    // 将该进程放入进程列表,就绪队列
+    processManager.processList.push_back(executionProcess);
+    // 申请内存
+    if(initialBlock_ids(executionProcess->pid)[0]==-1){
+        //todo 在这里向QT发送内存已满信息
 
-     // 将该进程放入进程列表,就绪队列
-     processManager.processList.push_back(executionProcess);
-     processManager.readyQueue.push(executionProcess);
- }
+        //加入阻塞队列
+        processManager.blockQueue.push(executionProcess);
+        executionProcess->state = ProcessState::BLOCKED;
+        return;
+    }
+    processManager.readyQueue.push(executionProcess);
+}
 
- void ExecutionProcess::execute() {
-     execute_user_input_command(fileInfo.file, this);
- }
+void ExecutionProcess::execute() {
+    execute_user_input_command(fileInfo.file, this);
+}
 
- void ExecutionProcess::destroy() {
-//     clearBlock_ids(this->pid);
-     processManager.deleteProcess(this->pid);
-     delete this;
- }
+void ExecutionProcess::destroy() {
+     clearBlock_ids(this->pid);
+    processManager.deleteProcess(this->pid);
+    if(!processManager.blockQueue.empty()){
+        processManager.readyQueue.push(processManager.blockQueue.front());
+        processManager.blockQueue.front()->state = ProcessState::READY;
+        processManager.blockQueue.pop();
+    }
+    delete this;
+}
 
- // 模拟执行用户输入的命令,参数为内存块地址
- void ExecutionProcess::execute_user_input_command(File *file,ExecutionProcess* executionProcess) {
-     while (true) {
-         //todo 从QT不停获取用户输入的指令，比如读，写
-         UserInputCommand userInputCommand;
-         switch (userInputCommand) {
-             case UserInputCommand::READ_DATA: {
-                 std::string data = look_file_content(file,executionProcess->pid);
-                 //todo 在这里向QT发送data
-                 break;
-             }
-             case UserInputCommand::WRITE_DATA: {
-                 //todo 从QT获取用户输入的data
-                 std::string data;
-                  file_change_content(file, data,executionProcess->pid);
-                 break;
-             }
-             case UserInputCommand::EXIT:
+// 模拟执行用户输入的命令,参数为内存块地址
+void ExecutionProcess::execute_user_input_command(File *file, ExecutionProcess *executionProcess) {
+    while (true) {
+        //todo 从QT不停获取用户输入的指令，比如读，写
+        UserInputCommand userInputCommand;
+        switch (userInputCommand) {
+            case UserInputCommand::READ_DATA: {
+                std::string data = look_file_content(file, executionProcess->pid);
+                //todo 在这里向QT发送data
+                break;
+            }
+            case UserInputCommand::WRITE_DATA: {
+                //todo 从QT获取用户输入的data
+                std::string data;
+                file_change_content(file, data, executionProcess->pid);
+                break;
+            }
+            case UserInputCommand::EXIT:
 
-                 return;
-             default:
-                 break;
-         }
-     }
- }
+                return;
+            default:
+                break;
+        }
+    }
+}
 
 
 int PIDGenerator::generatePID() {
@@ -370,3 +383,18 @@ void TaskScheduler::schedule() {
 //         // taskScheduler.joinThreads();
 //     }
 // }
+vector<int> show_process_record() {
+    return getProcessRecord();
+}
+
+vector<bool> show_disk_block_status() {
+    return memory_get_disk_block_status();
+}
+
+vector<int> show_group_block_status() {
+    return memory_get_group_block_status();
+}
+
+vector<Process *> get_process_list() {
+    return processManager.processList;
+}

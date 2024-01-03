@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include "tree_directory.h"
 
-// #include "memoryBlock.h"
+
 
 using namespace std;
 
@@ -122,7 +122,7 @@ class ProcessManager {
 public:
     std::vector<Process *> processList;
     std::priority_queue<Process *> readyQueue;
-    std::priority_queue<Process *> blockQueue;
+    std::queue<Process *> blockQueue;
 
     // 从进程列表中删除该进程
     void deleteProcess(int pid);
@@ -234,3 +234,7 @@ public:
     void schedule();
 
 };
+
+vector<int> show_process_record();
+vector<bool> show_disk_block_status();
+vector<int> show_group_block_status();
