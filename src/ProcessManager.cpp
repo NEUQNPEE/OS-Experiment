@@ -4,29 +4,29 @@
 
 
 NamedPipe::NamedPipe(std::string name) : pipeName(std::move(name)) {
-    // ´´½¨»ò´ò¿ªÎÄ¼ş×÷ÎªÃüÃû¹ÜµÀ
+    // åˆ›å»ºæˆ–æ‰“å¼€æ–‡ä»¶ä½œä¸ºå‘½åç®¡é“
     fileDescriptor = open(pipeName.c_str(), O_RDWR | O_CREAT, 0666);
 }
 
 NamedPipe::~NamedPipe() {
-    // ¹Ø±ÕÎÄ¼şÃèÊö·û
+    // å…³é—­æ–‡ä»¶æè¿°ç¬¦
     close(fileDescriptor);
-    // É¾³ıÎÄ¼ş
+    // åˆ é™¤æ–‡ä»¶
     unlink(pipeName.c_str());
 }
 
-// Ğ´Êı¾İµ½ÃüÃû¹ÜµÀ
+// å†™æ•°æ®åˆ°å‘½åç®¡é“
 void NamedPipe::writeData(const std::string &data) const {
     write(fileDescriptor, data.c_str(), data.size());
 }
 
-// ´ÓÃüÃû¹ÜµÀ¶ÁÈ¡Êı¾İ
+// ä»å‘½åç®¡é“è¯»å–æ•°æ®
 std::string NamedPipe::readData() const {
     const int bufferSize = 1024;
     char buffer[bufferSize];
     ssize_t bytesRead = read(fileDescriptor, buffer, bufferSize - 1);
     if (bytesRead > 0) {
-        buffer[bytesRead] = '\0'; // Ìí¼Ó×Ö·û´®½áÊø·û
+        buffer[bytesRead] = '\0'; // æ·»åŠ å­—ç¬¦ä¸²ç»“æŸç¬¦
         return std::string(buffer);
     }
     return "";
@@ -41,48 +41,49 @@ Process::Process(string &name, int pid, int priority, ProcessState state, Proces
     this->type = type;
 }
 
-// ÖØÔØĞ¡ÓÚÔËËã·û£¬ÓÃÓÚ±È½Ï Process ¶ÔÏóµÄÓÅÏÈ¼¶
+// é‡è½½å°äºè¿ç®—ç¬¦ï¼Œç”¨äºæ¯”è¾ƒ Process å¯¹è±¡çš„ä¼˜å…ˆçº§
 bool Process::operator<(const Process &other) const {
     return priority < other.priority;
 }
 
 
-// ´Ó½ø³ÌÁĞ±íÖĞÉ¾³ı¸Ã½ø³Ì
+// ä»è¿›ç¨‹åˆ—è¡¨ä¸­åˆ é™¤è¯¥è¿›ç¨‹
 void ProcessManager::deleteProcess(int pid) {
     for (int i = 0; i < processList.size(); i++) {
         if (processList[i]->pid == pid) {
             processList.erase(processList.begin() + i);
             break;
         }
+      
     }
 }
 
-// // ¹¹Ôì·½·¨
+// // æ„é€ æ–¹æ³•
 // InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
 //         : Process(name, pid, priority, ProcessState::RUNNING, type) {}
 
 // InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
 //     auto *initProcess = new InitProcess(name, pid, priority, processType);
-//     // ½«¸Ã½ø³Ì·ÅÈë½ø³ÌÁĞ±í
+//     // å°†è¯¥è¿›ç¨‹æ”¾å…¥è¿›ç¨‹åˆ—è¡¨
 //     processManager.processList.push_back(initProcess);
 //     return *initProcess;
 // }
 
 // void InitProcess::execute() {
 //     Folder *folder = init();
-//     //todo ÔÚÕâÀïÏòQT·¢ËÍfolderÖ¸Õë
+//     //todo åœ¨è¿™é‡Œå‘QTå‘é€folderæŒ‡é’ˆ
 // }
 
 // void InitProcess::destroy() {
 //     clearBlock_ids(this->pid);
-//     // ´Ó½ø³ÌÁĞ±íÖĞÉ¾³ı¸Ã½ø³Ì
+//     // ä»è¿›ç¨‹åˆ—è¡¨ä¸­åˆ é™¤è¯¥è¿›ç¨‹
 //     processManager.deleteProcess(this->pid);
-//     // Ïú»Ù¶ÔÏó
+//     // é”€æ¯å¯¹è±¡
 //     delete this;
 // }
 
 
-// // ¹¹Ôì·½·¨
+// // æ„é€ æ–¹æ³•
 // DataGenerationProcess::DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
 //         : Process(name, pid, priority, state, type) {}
 
@@ -93,7 +94,7 @@ void ProcessManager::deleteProcess(int pid) {
 //     dataGenerationProcess->fileInfo.fileName = fileInfo->fileName;
 //     dataGenerationProcess->fileInfo.folder = fileInfo->folder;
 //     dataGenerationProcess->command = command;
-//     // ½«¸Ã½ø³Ì·ÅÈë½ø³ÌÁĞ±í,¾ÍĞ÷¶ÓÁĞ
+//     // å°†è¯¥è¿›ç¨‹æ”¾å…¥è¿›ç¨‹åˆ—è¡¨,å°±ç»ªé˜Ÿåˆ—
 //     processManager.processList.push_back(dataGenerationProcess);
 //     processManager.readyQueue.push(dataGenerationProcess);
 // }
@@ -123,20 +124,20 @@ void ProcessManager::deleteProcess(int pid) {
 // }
 
 // void DataGenerationProcess::destroy() {
-//     // ´Ó½ø³ÌÁĞ±íÖĞÉ¾³ı¸Ã½ø³Ì
+//     // ä»è¿›ç¨‹åˆ—è¡¨ä¸­åˆ é™¤è¯¥è¿›ç¨‹
 //     processManager.deleteProcess(this->pid);
-//     // Ïú»Ù¶ÔÏó
+//     // é”€æ¯å¯¹è±¡
 //     delete this;
 // }
 
 // void DataGenerationProcess::judge_is_repeat(Folder *folder, std::string str) {
 //     if (is_repeat(folder, std::move(str))) {
-//         //todo ÔÚÕâÀïÏòQT·¢ËÍÖØÃûĞÅÏ¢
+//         //todo åœ¨è¿™é‡Œå‘QTå‘é€é‡åä¿¡æ¯
 //         return;
 //     }
 // }
 
-// // ¹¹Ôì·½·¨
+// // æ„é€ æ–¹æ³•
 // DataDeletionProcess::DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
 //         : Process(name, pid, priority, state, type) {}
 
@@ -147,7 +148,7 @@ void ProcessManager::deleteProcess(int pid) {
 //     dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
 //     dataDeletionProcess->fileInfo.folder = fileInfo->folder;
 //     dataDeletionProcess->command = command;
-//     // ½«¸Ã½ø³Ì·ÅÈë½ø³ÌÁĞ±í,¾ÍĞ÷¶ÓÁĞ
+//     // å°†è¯¥è¿›ç¨‹æ”¾å…¥è¿›ç¨‹åˆ—è¡¨,å°±ç»ªé˜Ÿåˆ—
 //     processManager.processList.push_back(dataDeletionProcess);
 //     processManager.readyQueue.push(dataDeletionProcess);
 // }
@@ -168,13 +169,13 @@ void ProcessManager::deleteProcess(int pid) {
 // }
 
 // void DataDeletionProcess::destroy() {
-//     // ´Ó½ø³ÌÁĞ±íÖĞÉ¾³ı¸Ã½ø³Ì
+//     // ä»è¿›ç¨‹åˆ—è¡¨ä¸­åˆ é™¤è¯¥è¿›ç¨‹
 //     processManager.deleteProcess(this->pid);
-//     // Ïú»Ù¶ÔÏó
+//     // é”€æ¯å¯¹è±¡
 //     delete this;
 // }
 
-// // ¹¹Ôì·½·¨
+// // æ„é€ æ–¹æ³•
 // ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
 //         : Process(name, pid, priority, state, type) {}
 
@@ -193,9 +194,9 @@ void ProcessManager::deleteProcess(int pid) {
 //                                                   ProcessType::EXECUTION_PROCESS);
 //     executionProcess->fileInfo.file = fileInfo->file;
 //     executionProcess->command = command;
-//     //todo ÉêÇëÄÚ´æ
+//     //todo ç”³è¯·å†…å­˜
 
-//     // ½«¸Ã½ø³Ì·ÅÈë½ø³ÌÁĞ±í,¾ÍĞ÷¶ÓÁĞ
+//     // å°†è¯¥è¿›ç¨‹æ”¾å…¥è¿›ç¨‹åˆ—è¡¨,å°±ç»ªé˜Ÿåˆ—
 //     processManager.processList.push_back(executionProcess);
 //     processManager.readyQueue.push(executionProcess);
 // }
@@ -210,19 +211,19 @@ void ProcessManager::deleteProcess(int pid) {
 //     delete this;
 // }
 
-// // Ä£ÄâÖ´ĞĞÓÃ»§ÊäÈëµÄÃüÁî,²ÎÊıÎªÄÚ´æ¿éµØÖ·
+// // æ¨¡æ‹Ÿæ‰§è¡Œç”¨æˆ·è¾“å…¥çš„å‘½ä»¤,å‚æ•°ä¸ºå†…å­˜å—åœ°å€
 // void ExecutionProcess::execute_user_input_command(File *file) {
 //     while (true) {
-//         //todo ´ÓQT²»Í£»ñÈ¡ÓÃ»§ÊäÈëµÄÖ¸Áî£¬±ÈÈç¶Á£¬Ğ´
+//         //todo ä»QTä¸åœè·å–ç”¨æˆ·è¾“å…¥çš„æŒ‡ä»¤ï¼Œæ¯”å¦‚è¯»ï¼Œå†™
 //         UserInputCommand userInputCommand;
 //         switch (userInputCommand) {
 //             case UserInputCommand::READ_DATA: {
 //                 std::string data = look_file_content(file);
-//                 //todo ÔÚÕâÀïÏòQT·¢ËÍdata
+//                 //todo åœ¨è¿™é‡Œå‘QTå‘é€data
 //                 break;
 //             }
 //             case UserInputCommand::WRITE_DATA: {
-//                 //todo ´ÓQT»ñÈ¡ÓÃ»§ÊäÈëµÄdata
+//                 //todo ä»QTè·å–ç”¨æˆ·è¾“å…¥çš„data
 //                 std::string data;
 //                 file_change_content(file, data);
 //                 break;
@@ -238,7 +239,7 @@ void ProcessManager::deleteProcess(int pid) {
 
 
 int PIDGenerator::generatePID() {
-    std::lock_guard<std::mutex> lock(mtx); // Ê¹ÓÃ»¥³âËøÈ·±£Ïß³Ì°²È«
+    std::lock_guard<std::mutex> lock(mtx); // ä½¿ç”¨äº’æ–¥é”ç¡®ä¿çº¿ç¨‹å®‰å…¨
     return counter++;
 }
 
@@ -248,14 +249,14 @@ std::mutex PIDGenerator::mtx;
 
 
 void TaskScheduler::createThreads(int numThreads) {
-    // ´´½¨¶à¸öÏß³Ì²¢¼ÓÈëÈİÆ÷
+    // åˆ›å»ºå¤šä¸ªçº¿ç¨‹å¹¶åŠ å…¥å®¹å™¨
     for (int i = 0; i < numThreads; ++i) {
         threads.emplace_back(&TaskScheduler::schedule, this);
     }
 }
 
 void TaskScheduler::joinThreads() {
-    // µÈ´ıËùÓĞÏß³Ì½áÊø
+    // ç­‰å¾…æ‰€æœ‰çº¿ç¨‹ç»“æŸ
     for (auto &thread: threads) {
         thread.join();
     }
@@ -263,37 +264,37 @@ void TaskScheduler::joinThreads() {
 
 void TaskScheduler::schedule() {
     std::lock_guard<std::mutex> lock(mutex_);
-    // ´Ó¾ÍĞ÷¶ÓÁĞÖĞÈ¡³öÓÅÏÈ¼¶×î¸ßµÄ½ø³Ì
+    // ä»å°±ç»ªé˜Ÿåˆ—ä¸­å–å‡ºä¼˜å…ˆçº§æœ€é«˜çš„è¿›ç¨‹
     Process *process = processManager.readyQueue.top();
     process->state = ProcessState::RUNNING;
-    // Ö´ĞĞ½ø³Ì
+    // æ‰§è¡Œè¿›ç¨‹
     cout << "process " << process->name << " start" << endl;
     process->execute();
-    // Ö´ĞĞÍê±Ïºó,½«½ø³Ì×´Ì¬ÖÃÎªFINISHED
+    // æ‰§è¡Œå®Œæ¯•å,å°†è¿›ç¨‹çŠ¶æ€ç½®ä¸ºFINISHED
     process->state = ProcessState::FINISHED;
-    // ´Ó¾ÍĞ÷¶ÓÁĞÖĞÉ¾³ı¸Ã½ø³Ì
+    // ä»å°±ç»ªé˜Ÿåˆ—ä¸­åˆ é™¤è¯¥è¿›ç¨‹
     processManager.readyQueue.pop();
-    // Ïú»Ù½ø³Ì
+    // é”€æ¯è¿›ç¨‹
     process->destroy();
 }
 
 // int main() {
-//     // ´´½¨Init½ø³ÌÓÃÓÚ³õÊ¼»¯
+//     // åˆ›å»ºInitè¿›ç¨‹ç”¨äºåˆå§‹åŒ–
 //     TaskScheduler taskScheduler;
 //     InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS).execute();
-//     // Ñ­»·µÈ´ıÖ¸ÁîÊäÈë
+//     // å¾ªç¯ç­‰å¾…æŒ‡ä»¤è¾“å…¥
 //     while (true) {
 //         if (!processManager.readyQueue.empty()) {
 //             taskScheduler.createThreads(1);
 //             // taskScheduler.joinThreads();
 //         }
 //         int commandInput = 0;
-//         //todo ÔÚÕâÀï´ÓQT»ñÈ¡commandInput
+//         //todo åœ¨è¿™é‡Œä»QTè·å–commandInput
 //         std::cout << "waiting for command input..." << std::endl;
 //         std::cin >> commandInput;
 //         switch (static_cast<OperationCommand>(commandInput)) {
 //             case OperationCommand::CREATE_FOLDER: {
-//                 //todo ´ÓQT»ñÈ¡Ä¿Â¼µÄÖ¸ÕëfolderºÍÎÄ¼şÃûstr
+//                 //todo ä»QTè·å–ç›®å½•çš„æŒ‡é’ˆfolderå’Œæ–‡ä»¶åstr
 //                 Folder *folder;
 //                 std::string file_name;
 //                 FileInfo fileInfo = {nullptr, folder, &file_name, nullptr};
@@ -303,7 +304,7 @@ void TaskScheduler::schedule() {
 //                 break;
 //             }
 //             case OperationCommand::DELETE_FOLDER: {
-//                 //todo ´ÓQT»ñÈ¡´ıÉ¾³ıÎÄ¼ş¼ĞµÄÖ¸Õë
+//                 //todo ä»QTè·å–å¾…åˆ é™¤æ–‡ä»¶å¤¹çš„æŒ‡é’ˆ
 //                 Folder *folder;
 //                 FileInfo fileInfo = {nullptr, folder, nullptr, nullptr};
 //                 int pid = PIDGenerator::generatePID();
@@ -312,7 +313,7 @@ void TaskScheduler::schedule() {
 //                 break;
 //             }
 //             case OperationCommand::CREATE_FILE: {
-//                 //todo ´ÓQT»ñÈ¡Ä¿Â¼µÄÖ¸ÕëfolderºÍÎÄ¼şÃûstr
+//                 //todo ä»QTè·å–ç›®å½•çš„æŒ‡é’ˆfolderå’Œæ–‡ä»¶åstr
 //                 Folder *folder;
 //                 std::string file_name;
 //                 FileInfo fileInfo = {nullptr, folder, nullptr, nullptr};
@@ -322,7 +323,7 @@ void TaskScheduler::schedule() {
 //                 break;
 //             }
 //             case OperationCommand::DELETE_FILE: {
-//                 //todo ´ÓQT»ñÈ¡´ıÉ¾³ıÎÄ¼şµÄÖ¸Õë
+//                 //todo ä»QTè·å–å¾…åˆ é™¤æ–‡ä»¶çš„æŒ‡é’ˆ
 //                 File *file;
 //                 FileInfo fileInfo = {file, nullptr, nullptr, nullptr};
 //                 int pid = PIDGenerator::generatePID();
@@ -331,7 +332,7 @@ void TaskScheduler::schedule() {
 //                 break;
 //             }
 //             case OperationCommand::CREATE_READ_WRITE: {
-//                 //todo ´ÓQT»ñÈ¡´ı¶ÁĞ´ÎÄ¼şµÄÖ¸Õë
+//                 //todo ä»QTè·å–å¾…è¯»å†™æ–‡ä»¶çš„æŒ‡é’ˆ
 //                 File *file;
 //                 FileInfo fileInfo = {file, nullptr, nullptr, nullptr};
 //                 int pid = PIDGenerator::generatePID();
@@ -339,7 +340,7 @@ void TaskScheduler::schedule() {
 //                         &"executionProcess"[pid], pid, 1, &fileInfo, OperationCommand::CREATE_READ_WRITE);
 //             }
 //             case OperationCommand::RENAME_FOLDER: {
-//                 //todo ´ÓQT»ñÈ¡´ıÖØÃüÃûÎÄ¼ş¼ĞµÄÖ¸ÕëºÍĞÂµÄÎÄ¼ş¼ĞÃû
+//                 //todo ä»QTè·å–å¾…é‡å‘½åæ–‡ä»¶å¤¹çš„æŒ‡é’ˆå’Œæ–°çš„æ–‡ä»¶å¤¹å
 //                 Folder *folder;
 //                 std::string new_name;
 //                 FileInfo fileInfo = {nullptr, folder, &new_name, nullptr};
@@ -348,7 +349,7 @@ void TaskScheduler::schedule() {
 //                         &"dataGenerationProcess"[pid], pid, 1, &fileInfo, OperationCommand::RENAME_FOLDER);
 //             }
 //             case OperationCommand::RENAME_FILE: {
-//                 //todo ´ÓQT»ñÈ¡´ıÖØÃüÃûÎÄ¼şµÄÖ¸ÕëºÍĞÂµÄÎÄ¼şÃû
+//                 //todo ä»QTè·å–å¾…é‡å‘½åæ–‡ä»¶çš„æŒ‡é’ˆå’Œæ–°çš„æ–‡ä»¶å
 //                 File *file;
 //                 std::string new_name;
 //                 FileInfo fileInfo = {file, nullptr, &new_name, nullptr};
@@ -357,8 +358,8 @@ void TaskScheduler::schedule() {
 //                         &"dataGenerationProcess"[pid], pid, 1, &fileInfo, OperationCommand::RENAME_FILE);
 //             }
 //             case OperationCommand::EXIT: {
-//                 // Ïú»Ù½ø³Ì,ÊÍ·ÅÄÚ´æ
-//                 //ÕÒµ½ËùÓĞ½ø³Ì,µ÷ÓÃdestroy·½·¨,µÚÒ»¸ö½ø³ÌÊÇinit½ø³Ì,×îºóÏú»Ù
+//                 // é”€æ¯è¿›ç¨‹,é‡Šæ”¾å†…å­˜
+//                 //æ‰¾åˆ°æ‰€æœ‰è¿›ç¨‹,è°ƒç”¨destroyæ–¹æ³•,ç¬¬ä¸€ä¸ªè¿›ç¨‹æ˜¯initè¿›ç¨‹,æœ€åé”€æ¯
 //                 for (int i = 1; i < processManager.processList.size(); i++) {
 //                     processManager.processList[i]->destroy();
 //                 }
@@ -370,3 +371,4 @@ void TaskScheduler::schedule() {
 //         // taskScheduler.joinThreads();
 //     }
 // }
+
