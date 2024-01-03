@@ -74,8 +74,7 @@ void InitProcess::execute() {
 }
 
 void InitProcess::destroy() {
-    //todo 释放内存
-
+    clearBlock_ids(this->pid);
     // 从进程列表中删除该进程
     processManager.deleteProcess(this->pid);
     // 销毁对象
@@ -206,8 +205,7 @@ void ExecutionProcess::execute() {
 }
 
 void ExecutionProcess::destroy() {
-    //todo 释放内存
-
+    clearBlock_ids(this->pid);
     processManager.deleteProcess(this->pid);
     delete this;
 }
