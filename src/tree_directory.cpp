@@ -796,11 +796,11 @@ void tree_dir_diser(std::string str)
 
 // 初始化函数
 
-// Folder *init()
-// {
-//     tree_dir_diser(gotoString(ReadDirectoryInfo()));
-//     return root;
-// }
+Folder *init()
+{
+    tree_dir_diser(gotoString(ReadDirectoryInfo()));
+    return root;
+}
 
 
 // 判断文件夹是否重名
