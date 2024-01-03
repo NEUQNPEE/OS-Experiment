@@ -789,6 +789,7 @@ void tree_dir_diser(std::string str)
 
 Folder *init_root()
 {
+    initialMemory();
     tree_dir_diser(gotoString(ReadDirectoryInfo()));
     return root;
 }
