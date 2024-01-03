@@ -9,6 +9,12 @@
 // 得到当前时间的函数
 std::string gettime();
 
+// 将字符串转化为char数组
+char *gotoChar(std::string str);
+
+// 将char数组转化为字符串
+std::string gotoString(char *str);
+
 // 文件夹结构体声明
 struct Folder;
 
@@ -32,7 +38,6 @@ private:
     int size = 0;
     std::string Create_time;
     std::string Change_time;
-    std::string content = "";
     Folder *dad;
 
 public:
@@ -67,14 +72,8 @@ public:
     // 文件属性反序列化
     void file_deserialize(std::string str);
 
-    // 文件内容序列化
-    std::string file_con_serialize();
-
-    // 文件内容反序列化
-    void file_con_deserialize(std::string str);
-
     // 展示文件属性
-    void show();
+    std::vector<std::string> show();
 };
 
 // 文件夹结构体
@@ -151,7 +150,7 @@ public:
     void folder_deserialize(std::string str);
 
     // 展示文件夹属性
-    void show();
+    std::vector<std::string> show();
 };
 
 // 树形目录序列化生成
@@ -166,7 +165,13 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 // 树形目录反序列化
 void tree_dir_diser(std::string str);
 
-// 判断是否重名接口
+// 初始化函数
+Folder *init();
+
+// 判断文件夹是否重名
+bool folder_is_repeat(Folder *folder, std::string str);
+
+// 判断文件是否重名接口
 bool is_repeat(Folder *folder, std::string str);
 
 // 添加文件接口

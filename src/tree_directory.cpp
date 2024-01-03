@@ -1,6 +1,6 @@
 #include "tree_directory.h"
+#include "memory.h"
 Folder *root = new Folder("root");
-int ID_number = 1000;
 std::string gettime()
 {
     std::string str = "";
@@ -15,13 +15,28 @@ std::string gettime()
     if (localtime_s(&localTime, &currentTime) == 0)
     {
         // 将时间信息拼接成字符串
-        str = str + std::to_string(localTime.tm_year + 1900) + "年" + std::to_string(localTime.tm_mon + 1) + "月" + std::to_string(localTime.tm_mday) + "日" + std::to_string(localTime.tm_hour) + "时" + std::to_string(localTime.tm_min) + "分" + std::to_string(localTime.tm_sec) + "秒";
+        str = str + std::to_string(localTime.tm_year + 1900) + ":" + std::to_string(localTime.tm_mon + 1) + ":" + std::to_string(localTime.tm_mday) + ":" + std::to_string(localTime.tm_hour) + ":" + std::to_string(localTime.tm_min) + ":" + std::to_string(localTime.tm_sec) + ":";
     }
     else
     {
         // 错误处理
         std::cerr << "Error in localtime_s" << std::endl;
     }
+    return str;
+}
+// 将字符串转化为char数组
+char *gotoChar(std::string str)
+{
+    char *ch = new char[str.size() + 1];
+    str.copy(ch, str.size());
+    ch[str.size()] = '\0';
+    return ch;
+}
+
+// 将char数组转化为字符串
+std::string gotoString(char *ch)
+{
+    std::string str(ch);
     return str;
 }
 // 读文件属性函数
@@ -51,7 +66,7 @@ std::string File::get_Change_time()
 }
 std::string File::get_Content()
 {
-    return this->content;
+    return ReadFile(std::to_string(this->ID));
 }
 Folder *File::get_Dad()
 {
@@ -71,8 +86,33 @@ void File::set_Name_Type(std::string str)
 // 设置标识符
 void File::set_ID()
 {
-    this->ID = ID_number;
-    ID_number++;
+    std::string str = this->Create_time;
+    std::string str1 = "";
+    int n = 0;
+    for (int i = 0; i < str.size(); i++)
+    {
+        if (n < 3)
+        {
+            if (str[i] == ';')
+            {
+                n++;
+            }
+            else
+            {
+            }
+        }
+        else
+        {
+            if (str[i] == ':')
+            {
+            }
+            else
+            {
+                str1 += str[i];
+            }
+        }
+    }
+    this->ID = std::stoi(str1);
 }
 
 // 写内容
@@ -81,8 +121,7 @@ void File::set_Content(std::string str)
     std::string time = gettime();
     this->Change_time = time;
     int n = str.size();
-    n -= content.size();
-    this->content = str;
+    n -= this->size;
     this->size += n;
     Folder *Temp_dad = this->dad;
     while (true)
@@ -155,13 +194,14 @@ std::string File::file_serialize()
     str += this->Create_time + "$";
     str += this->Change_time + "$";
     str += std::to_string(this->size) + "$";
+    str += std::to_string(this->ID) + "$";
     return str;
 }
 
 // 文件属性反序列化
 void File::file_deserialize(std::string str)
 {
-    std::string str1[5] = {};
+    std::string str1[6] = {};
     int n = 0;
     for (int i = 0; i < str.size(); i++)
     {
@@ -179,32 +219,20 @@ void File::file_deserialize(std::string str)
     this->Create_time = str1[2];
     this->Change_time = str1[3];
     this->size = std::stoi(str1[4]);
-}
-
-// 文件内容序列化
-std::string File::file_con_serialize()
-{
-    std::string str = "";
-    str += std::to_string(this->ID) + "$";
-    str += this->content + "$";
-    return str;
-}
-
-// 文件内容反序列化
-void File::file_con_deserialize(std::string str)
-{
-    this->content = str;
+    this->ID = std::stoi(str1[5]);
 }
 
 // 展示文件属性
-void File::show()
+std::vector<std::string> File::show()
 {
-    std::cout << "名称：" << name << std::endl;
-    std::cout << "地址：" << addr << std::endl;
-    std::cout << "大小：" << size << std::endl;
-    std::cout << "创建时间：" << Create_time << std::endl;
-    std::cout << "更改时间：" << Change_time << std::endl;
-    std::cout << "内容：" << content << std::endl;
+    std::vector<std::string> v;
+    v.push_back(std::to_string(this->ID));
+    v.push_back(this->name);
+    v.push_back(this->addr);
+    v.push_back(std::to_string(this->size));
+    v.push_back(this->Create_time);
+    v.push_back(this->Change_time);
+    return v;
 }
 
 // 读文件夹内容函数
@@ -390,6 +418,7 @@ void Folder::Add_file(File *file, int flag)
         this->File_child.push_back(file);
         file->change_Dad(this);
         file->change_Addr(this->addr + '\\' + file->get_Name());
+        file->set_ID();
     }
     else
     {
@@ -421,7 +450,6 @@ void Folder::Add_file(File *file, int flag)
         this->File_child.push_back(file);
         file->change_Dad(this);
         file->change_Addr(this->addr + '\\' + file->get_Name());
-        file->set_ID();
     }
 }
 
@@ -588,45 +616,28 @@ void Folder::folder_deserialize(std::string str)
 }
 
 // 展示文件夹属性
-void Folder::show()
+std::vector<std::string> Folder::show()
 {
-    std::cout << "类型：" << this->type << std::endl;
-    std::cout << "名称：" << name << std::endl;
-    std::cout << "地址：" << addr << std::endl;
-    std::cout << "大小：" << size << std::endl;
-    std::cout << "文件数：" << File_number << std::endl;
-    std::cout << "文件夹数：" << Folder_number << std::endl;
-    std::cout << "创建时间：" << Create_time << std::endl;
-    std::cout << "更改时间：" << Change_time << std::endl;
+    std::vector<std::string> v;
+    v.push_back(this->name);
+    v.push_back(this->type);
+    v.push_back(this->addr);
+    v.push_back(std::to_string(this->size));
+    v.push_back(std::to_string(this->File_number));
+    v.push_back(std::to_string(this->Folder_number));
+    v.push_back(this->Create_time);
+    v.push_back(this->Change_time);
+    return v;
 }
 
-// 文件内容序列化生成
-void file_con_ser_gen(Folder *folder, std::string *str)
+// 文件内容读入文件
+void file_con_ser_gen(File *file)
 {
-    int folder_num = folder->get_File_child().size();
-    int file_num = folder->get_Folder_child().size();
-    if (folder_num == 0 && file_num == 0)
-    {
-    }
-    else
-    {
-        for (int i = 0; i < folder_num; i++)
-        {
-            file_con_ser_gen(folder->get_Folder_child()[i], str);
-        }
-        for (int i = 0; i < file_num; i++)
-        {
-            *str += folder->get_File_child()[i]->file_con_serialize();
-        }
-    }
 }
 
-// 文件内容序列化
-std::string file_con_ser()
+// 文件内容传给内存
+void file_con_ser(File *file)
 {
-    std::string str;
-    file_con_ser_gen(root, &str);
-    return str;
 }
 
 // 树形目录序列化生成
@@ -776,4 +787,120 @@ void tree_dir_diser(std::string str)
         inform.push(str3);
     }
     tree_dir_diser_gen(type, child_num, inform);
+}
+
+// 初始化函数
+Folder *init()
+{
+    tree_dir_diser(gotoString(ReadDirectoryInfo()));
+    return root;
+}
+
+// 判断文件夹是否重名
+bool folder_is_repeat(Folder *folder, std::string str)
+{
+    for (int i = 0; i < folder->get_Folder_child().size(); i++)
+    {
+        if (folder->get_Folder_child()[i]->get_Name() == str)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+// 判断文件是否重名接口
+bool file_is_repeat(Folder *folder, std::string str)
+{
+    for (int i = 0; i < folder->get_File_child().size(); i++)
+    {
+        if (folder->get_File_child()[i]->get_Name() == str)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// 添加文件接口
+File *add_file(Folder *folder, std::string str)
+{
+    File *file = new File(str);
+    folder->Add_file(file);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return file;
+}
+
+// 添加文件夹接口
+Folder *add_folder(Folder *folder, std::string str)
+{
+    Folder *folder = new Folder(str);
+    folder->Add_folder(folder);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return folder;
+}
+
+// 删除文件夹
+void delete_folder(Folder *folder)
+{
+    folder->delete_folder();
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
+
+// 删除文件
+void delete_file(File *file)
+{
+    file->delete_File();
+    DeleteFile(std::to_string(file->get_ID()));
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
+
+// 改文件夹名接口
+Folder *folder_change_name(Folder *folder, std::string name)
+{
+    folder->set_Name(name);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
+
+// 改文件名
+File *file_change_name(File *file, std::string name)
+{
+    file->set_Name_Type(name);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
+
+// 改文件内容
+File *file_change_content(File *file, std::string content)
+{
+    file->set_Content(content);
+    WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
+}
+
+// 获得文件夹的子文件夹
+std::vector<Folder *> get_folder_child(Folder *folder)
+{
+    return folder->get_Folder_child();
+}
+
+// 获得文件夹的子文件
+std::vector<File *> get_file_child(Folder *folder)
+{
+    return folder->get_File_child();
+}
+
+// 打开文件
+std::string look_file_content(File *file)
+{
+    return file->get_Content();
+}
+
+// 查看文件属性
+std::vector<std::string> look_file(File *file)
+{
+    return file->show();
+}
+
+// 查看文件夹属性
+std::vector<std::string> look_folder(Folder *folder)
+{
+    return folder->show();
 }
