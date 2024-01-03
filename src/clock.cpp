@@ -9,10 +9,6 @@ using namespace std;
 
 // 总计64个内存块
 memoryBlock memory_block[64];
-// 用于当前进程的八个内存块的块号
-int block_ids[8];
-// 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
-string page_content[1024];
 //64个内存块被进程调度的记录。数值为调用进程的ID，-1则表明没有进程占用
 vector<int> process_memory_record;
 
@@ -43,6 +39,19 @@ char *ReadDirectoryInfo()
 {
     int block_number = disk.get_dir_info_block_number();
     return disk.read_block(block_number);
+}
+
+// 初始化内存块
+void initialMemoryBlock()
+{
+    //初始化64个内存块
+    for (int i = 0; i < 64; i++)
+    {
+        memory_block[i].block_id = i;
+        memory_block[i].begin = i * 40;
+    }
+    //初始化64个内存块被进程调度的记录
+    process_memory_record.resize(64, -1);
 }
 
 // 初始化内存及相关操作
@@ -381,3 +390,22 @@ void DeleteFile(int file_id)
     }
     disk.delete_file_info(block_id);
 }
+
+//返回当前进程对内存块的调度状况
+vector<int> getProcessRecord()
+{
+    return process_memory_record;
+}
+
+// 向上传递磁盘提供给QT的磁盘块占用情况
+vector<bool> memory_get_disk_block_status()
+{
+    return disk.get_disk_block_status();
+}
+
+// 向上传递磁盘提供给QT的成组链块的情况
+vector<int> memory_get_group_block_status()
+{
+    return disk.get_group_block_status();
+}
+

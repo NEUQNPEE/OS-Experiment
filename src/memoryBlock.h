@@ -22,18 +22,6 @@ typedef struct memoryBlock
     int process_id = -1;
 } memoryBlock;
 
-// 初始化内存块
-void initialMemoryBlock()
-{
-    //初始化64个内存块
-    for (int i = 0; i < 64; i++)
-    {
-        memory_block[i].block_id = i;
-        memory_block[i].begin = i * 40;
-    }
-    //初始化64个内存块被进程调度的记录
-    process_memory_record.resize(64, -1);
-}
 
 //创建进程时分配内存块,返回八个内存块的块号。如果都是-1，则表明内存已满
 vector<int> initialBlock_ids(int write_block_id);
@@ -42,21 +30,11 @@ vector<int> initialBlock_ids(int write_block_id);
 void clearBlock_ids(int clear_process_id);
 
 //返回当前进程对内存块的调度状况
-vector<int> getProcessRecord()
-{
-    return process_memory_record;
-}
+vector<int> getProcessRecord();
 
 // 向上传递磁盘提供给QT的磁盘块占用情况
-vector<bool> memory_get_disk_block_status()
-{
-    return disk.get_disk_block_status();
-}
+vector<bool> memory_get_disk_block_status();
 
 // 向上传递磁盘提供给QT的成组链块的情况
-vector<int> memory_get_group_block_status()
-{
-    return disk.get_group_block_status();
-}
-
+vector<int> memory_get_group_block_status();
 
