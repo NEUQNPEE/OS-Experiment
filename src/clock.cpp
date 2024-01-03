@@ -86,7 +86,7 @@ vector<int> initialBlock_ids(int write_process_id)
             {
                 cout << "警告!已无空闲内存块!内存溢出!";
                 fill(block_ids, block_ids + 8, -1);
-                generate(block_ids, block_ids + 8, temp);
+                // generate(block_ids, block_ids + 8, temp);
                 return temp;
             }
             if (memory_block[j].page_id < 0)
@@ -102,7 +102,7 @@ vector<int> initialBlock_ids(int write_process_id)
         memory_block[block_ids[i]].process_id = write_process_id;
     }
 
-    generate(block_ids, block_ids + 8, temp);
+    // generate(block_ids, block_ids + 8, temp);
     return temp;
 }
 

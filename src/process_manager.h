@@ -206,7 +206,7 @@ public:
 
     void destroy() override;
 
-    static void execute_user_input_command(File *file);
+    static void execute_user_input_command(File *file,ExecutionProcess* executionProcess);
 };
 
 /**
