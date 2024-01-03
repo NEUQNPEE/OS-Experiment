@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "memoryBlock.h"
 #include "disk.h"
+#include "process_manager.h"
 
 using namespace std;
 
@@ -44,7 +45,7 @@ void initialMemory()
 }
 
 // 为进程分配八个内存块
-bool initialBlock_ids(int write_process_id)
+bool initialBlock_ids(Process* &write_process)
 {
     // 初始化FAT表，以防FAT表有更新
     fat_list = disk.get_fat_block_numbers();
@@ -69,18 +70,21 @@ bool initialBlock_ids(int write_process_id)
     // 八个内存块记录当前进程的ID
     for (int i = 0; i < 8; i++)
     {
-        memory_block[block_ids[i]].process_id = write_process_id;
+        memory_block[block_ids[i]].process_id = write_process->pid;
     }
+    //八个内存块的块号写入进程对象
+    generate(block_ids, block_ids + 8, write_process->allocatedMemory);
+
     return true;
 }
 
 // 释放进程占用的八个内存块
-void clearBlock_ids(int clear_process_id)
+void clearBlock_ids(Process* &clear_process)
 {
     //当前进程是否为释放内存块的进程
     for (int i = 0; i < 8; i++)
     {
-        if (memory_block[block_ids[i]].process_id == clear_process_id)
+        if (memory_block[block_ids[i]].process_id == clear_process->pid)
         {
             memory_block[block_ids[i]].page_id = -1;
             memory_block[block_ids[i]].status = 0;
@@ -91,7 +95,7 @@ void clearBlock_ids(int clear_process_id)
     //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
     for(int i = 0; i < 64; i++)
     {
-        if(memory_block[i].process_id == clear_process_id)
+        if(memory_block[i].process_id == clear_process->pid)
         {
             memory_block[i].page_id = -1;
             memory_block[i].status = 0;
@@ -99,6 +103,8 @@ void clearBlock_ids(int clear_process_id)
         }
     }
 
+    //清空释放进程的内存块地址
+    clear_process->allocatedMemory.clear();
     // 顺带把暂存页内容的page_content清空
     fill(page_content, page_content + 1024, "");
     // 顺带把当前进程调度内存块的状况清空
@@ -116,6 +122,7 @@ void recordBlock_ids()
             continue;
 
         ans = ans + "块号:" + to_string(block_ids[i]) + ',';
+        ans = ans + "进程号:" + to_string(memory_block[block_ids[i]].process_id) + ',';
         ans = ans + "页号:" + to_string(memory_block[block_ids[i]].page_id) + ',';
         ans = ans + "内容:";
         for (int i = memory_block[block_ids[i]].begin; (i - memory_block[block_ids[i]].begin) < 40; i++)
