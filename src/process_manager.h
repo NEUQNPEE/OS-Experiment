@@ -7,14 +7,13 @@
 #include <fcntl.h>
 #include "tree_directory.h"
 
-
-
 using namespace std;
 
 /**
  * 进程状态枚举
  */
-enum class ProcessState {
+enum class ProcessState
+{
     READY,
     RUNNING,
     BLOCKED,
@@ -24,7 +23,8 @@ enum class ProcessState {
 /**
  * 队列类型枚举
  */
-enum class QueueType {
+enum class QueueType
+{
     READY_QUEUE,
     BLOCKED_QUEUE
 };
@@ -32,7 +32,8 @@ enum class QueueType {
 /**
  * 进程类型枚举,实际上一般的操作系统不会简单的将进程值分为这三类
  */
-enum class ProcessType {
+enum class ProcessType
+{
     DATA_GENERATION_PROCESS = 1,
     DATA_DELETION_PROCESS = 2,
     EXECUTION_PROCESS = 3,
@@ -42,7 +43,8 @@ enum class ProcessType {
 /**
  * 操作命令枚举
  */
-enum class OperationCommand {
+enum class OperationCommand
+{
     // 创建文件夹
     CREATE_FOLDER = 1,
     // 删除文件夹
@@ -63,20 +65,33 @@ enum class OperationCommand {
 /**
  * 文件信息结构体
  */
-struct FileInfo {
+struct FileInfo
+{
     File *file;
     Folder *folder;
     std::string *fileName;
     std::string *data;
+
+    // 默认构造方法
+    FileInfo() = default;
+
+    // 构造方法1:创建新文件，需要folder和fileName
+    FileInfo(Folder *folder, string *fileName)
+    {
+        this->folder = folder;
+        this->fileName = fileName;
+    }
 };
 
 /**
  * 命名管道结构体
  */
-struct NamedPipe {
+struct NamedPipe
+{
 private:
     std::string pipeName;
     int fileDescriptor;
+
 public:
     explicit NamedPipe(std::string name);
 
@@ -92,7 +107,8 @@ public:
 /**
  * 进程类
  */
-class Process {
+class Process
+{
 public:
     string name;                 // 进程名
     int pid;                     // 进程ID
@@ -100,7 +116,7 @@ public:
     ProcessState state;          // 进程状态
     ProcessType type;            // 进程类型
     vector<int> allocatedMemory; // 内存块地址
-    FileInfo fileInfo{};           // 文件信息
+    FileInfo fileInfo{};         // 文件信息
     OperationCommand command;    // 操作命令
 
     Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -121,7 +137,8 @@ public:
 /**
  * 进程管理类
  */
-class ProcessManager {
+class ProcessManager
+{
 public:
     std::vector<Process *> processList;
     std::priority_queue<Process *> readyQueue;
@@ -131,15 +148,16 @@ public:
     void deleteProcess(int pid);
 };
 
-
-
 /**
  * 初始化进程,直到操作系统关闭才会释放内存
  */
-class InitProcess : public Process {
+class InitProcess : public Process
+{
 private:
     // 构造方法
     InitProcess(string &name, int pid, int priority, ProcessType type);
+
+    Folder *folder;
 
 public:
     static InitProcess create(string name, int pid, int priority, ProcessType processType);
@@ -147,12 +165,15 @@ public:
     void execute() override;
 
     void destroy() override;
+
+    Folder *get_folder();
 };
 
 /**
  * 数据生成进程
  */
-class DataGenerationProcess : public Process {
+class DataGenerationProcess : public Process
+{
 public:
     // 构造方法
     DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -167,7 +188,8 @@ public:
 /**
  * 数据删除进程
  */
-class DataDeletionProcess : public Process {
+class DataDeletionProcess : public Process
+{
 public:
     // 构造方法
     DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -182,7 +204,8 @@ public:
 /**
  * 用户输入指令枚举
  */
-enum class UserInputCommand {
+enum class UserInputCommand
+{
     // 退出
     EXIT = 0,
     // 读取数据
@@ -194,7 +217,8 @@ enum class UserInputCommand {
 /**
  * 执行进程
  */
-class ExecutionProcess : public Process {
+class ExecutionProcess : public Process
+{
 public:
     // 构造方法
     ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -209,26 +233,34 @@ public:
 
     void destroy() override;
 
-    static void execute_user_input_command(File *file,ExecutionProcess* executionProcess);
+    static void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
 };
 
 /**
  * PID生成器
  */
-class PIDGenerator {
+class PIDGenerator
+{
 private:
     static int counter;
     static std::mutex mtx;
+
 public:
     static int generatePID();
 };
 
 /**
  * 任务调度类
-*/
-class TaskScheduler {
+ */
+class TaskScheduler
+{
 public:
-    std::vector<std::thread> threads;  // 存储线程对象的容器
+    static TaskScheduler &getInstance()
+    {
+        static TaskScheduler instance;
+        return instance;
+    }
+    std::vector<std::thread> threads; // 存储线程对象的容器
 
     void createThreads(int numThreads);
 
@@ -236,6 +268,14 @@ public:
 
     void schedule();
 
+private:
+    TaskScheduler() = default;
+    ~TaskScheduler() = default;
+
+    TaskScheduler(const TaskScheduler &) = delete;
+    TaskScheduler &operator=(const TaskScheduler &) = delete;
+    TaskScheduler(TaskScheduler &&) = delete;
+    TaskScheduler &operator=(TaskScheduler &&) = delete;
 };
 
 vector<int> show_process_record();

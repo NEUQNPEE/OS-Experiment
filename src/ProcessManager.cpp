@@ -89,7 +89,7 @@ InitProcess InitProcess::create(string name, int pid, int priority, ProcessType 
 }
 
 void InitProcess::execute() {
-    Folder *folder = init_root();
+    folder = init_root();
     //todo 在这里向QT发送folder指针
 }
 
@@ -100,12 +100,17 @@ void InitProcess::destroy() {
     // 销毁对象
     delete this;
 }
-
+ 
+Folder *InitProcess::get_folder()
+{
+    return folder;
+}
 
 // 构造方法
 DataGenerationProcess::DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
         : Process(name, pid, priority, state, type) {}
 
+// 构造方法，参数为：进程名，进程id，进程优先级，文件信息，操作指令
 void DataGenerationProcess::
 create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
     auto *dataGenerationProcess = new DataGenerationProcess(name, pid, priority, ProcessState::READY,

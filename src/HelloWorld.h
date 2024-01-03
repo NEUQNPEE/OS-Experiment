@@ -22,6 +22,9 @@
 #include <QTimer>
 #include <QStandardItemModel>
 #include <QStyledItemDelegate>
+#include <QMenu>
+#include <QModelIndex>
+#include <QInputDialog>
 
 #include "process_manager.h"
 class HelloWorld : public QMainWindow
@@ -41,5 +44,7 @@ private:
     QPushButton *win_btn;
     QWidget *win = nullptr;
     QLabel *timeLabel;
+
+    InitProcess initProc = InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS);
     void showTaskManager();
 };

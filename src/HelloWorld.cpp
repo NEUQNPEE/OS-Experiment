@@ -1,5 +1,7 @@
 #include "HelloWorld.h"
 
+TaskScheduler& scheduler = TaskScheduler::getInstance();
+
 class MemoryWidget : public QWidget
 {
 public:
@@ -236,12 +238,12 @@ public:
     }
 };
 
-// 成组链块情况展示
 class GroupBlockWidget : public QWidget
 {
 private:
     // 八个布局，每个布局对应一个组
     std::vector<QGridLayout *> groupLayouts;
+
 public:
     // 初始化函数
     GroupBlockWidget(QWidget *parent = nullptr) : QWidget(parent)
@@ -334,7 +336,6 @@ public:
             }
         }
     }
-
 };
 
 class TextFileButton : public QPushButton
@@ -490,53 +491,60 @@ public:
 
         // 连接双击事件
         installEventFilter(this);
+    }
 
-        // 写入模拟的目录信息
-        rootEntry.type = "folder";
-        rootEntry.name = "root";
+    void parseFolderInfo(Folder *root)
+    {
+        // 清空model
+        model->clear();
 
-        DirectoryEntry *subDir1 = new DirectoryEntry;
-        subDir1->type = "folder";
-        subDir1->name = "subdir1";
+        string name = root->get_Name();
+        string type = root->get_Type();
 
-        DirectoryEntry *subDir2 = new DirectoryEntry;
-        subDir2->type = "folder";
-        subDir2->name = "subdir2";
+        int size = root->get_Size();
+        int file_number = root->get_File_number();
+        int folder_number = root->get_Folder_number();
 
-        DirectoryEntry *file1 = new DirectoryEntry;
-        file1->type = "file";
-        file1->name = "file1.txt";
+        string create_time = root->get_Create_time();
+        string change_time = root->get_Change_time();
 
-        DirectoryEntry *file2 = new DirectoryEntry;
-        file2->type = "file";
-        file2->name = "file2.txt";
+        // 生成一个新的根节点
+        QStandardItem *rootItem = new QStandardItem(QString::fromLocal8Bit(name));
+        model->appendRow(rootItem);
 
-        rootEntry.subdirectories.append(subDir1);
-        rootEntry.subdirectories.append(subDir2);
-        rootEntry.files.append(file1);
-        rootEntry.files.append(file2);
+        // 遍历子文件对象
+        vector<File *> file_child = root->get_File_child();
+        for (int i = 0; i < file_child.size(); i++)
+        {
+            string name = file_child[i]->get_Name();
+            int size = file_child[i]->get_Size();
+            string create_time = file_child[i]->get_Create_time();
+            string change_time = file_child[i]->get_Change_time();
 
-        DirectoryEntry *subSubDir = new DirectoryEntry;
-        subSubDir->type = "folder";
-        subSubDir->name = "subsubdir";
+            // 生成一个新的子文件节点
+            QStandardItem *fileItem = new QStandardItem(QString::fromLocal8Bit(name));
+            rootItem->appendRow(fileItem);
+        }
 
-        subDir1->subdirectories.append(subSubDir);
+        // 递归遍历子文件夹对象，使用新的递归函数
+        vector<Folder *> folder_child = root->get_Folder_child();
+        for (int i = 0; i < folder_child.size(); i++)
+        {
+            parseFolderInfo(folder_child[i]);
+        }
+    }
 
-        subDir2->files.append(file1);
+    // 设置root
+    void set_root(Folder *root)
+    {
+        this->root = root;
     }
 
 private:
-    // 模拟用的目录信息，一个链表，包括一个类型，一个名字，n个指向子目录的指针，n个指向子文件的指针
-    struct DirectoryEntry
-    {
-        QString type;                           // 目录类型（例如：文件夹、文件）
-        QString name;                           // 目录名字
-        QList<DirectoryEntry *> subdirectories; // 指向子目录的指针链表
-        QList<DirectoryEntry *> files;          // 指向子文件的指针链表
-    };
+    // 便于后续操作的指针
+    QStandardItemModel *model;
 
-    // 根目录
-    DirectoryEntry rootEntry;
+    Folder *root;
 
     bool eventFilter(QObject *obj, QEvent *event) override
     {
@@ -558,16 +566,11 @@ private:
         QTreeView *treeView = new QTreeView(myComputerWindow);
         treeView->setHeaderHidden(true); // 隐藏列头
 
-        QStandardItemModel *model = new QStandardItemModel(treeView);
+        model = new QStandardItemModel(treeView);
         treeView->setModel(model);
 
-        // 创建根节点
-        QStandardItem *rootItem = new QStandardItem(rootEntry.name);
-        model->appendRow(rootItem);
-
-        // 递归添加子目录和子文件
-        addTreeItems(rootItem, rootEntry.subdirectories);
-        addTreeItems(rootItem, rootEntry.files);
+        // 根据根文件夹对象，解析目录信息
+        parseFolderInfo(root);
 
         // 设置树形视图的列宽自适应内容
         treeView->resizeColumnToContents(0);
@@ -576,21 +579,140 @@ private:
         CustomItemDelegate *itemDelegate = new CustomItemDelegate(treeView);
         treeView->setItemDelegate(itemDelegate);
 
+        // 为树形视图添加上下文菜单
+        treeView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(treeView, &QTreeView::customContextMenuRequested, this, [=](const QPoint &pos)
+                {
+        QModelIndex index = treeView->indexAt(pos);
+        if (index.isValid()) {
+        QMenu menu;
+
+        QString name = index.data().toString();
+
+        //右键点击的是文件
+        if (index.parent().isValid()) {
+
+            QAction *readFileAction = menu.addAction("读写文件");
+            connect(readFileAction, &QAction::triggered, this, &MyComputerButton::readFile);
+
+            QAction *renameFileAction = menu.addAction("重命名文件");
+            connect(renameFileAction, &QAction::triggered, this, &MyComputerButton::renameFile);
+
+            QAction *deleteFileAction = menu.addAction("删除文件");
+            connect(deleteFileAction, &QAction::triggered, this, &MyComputerButton::deleteFile);
+        }
+
+        //右键点击的文件夹
+        else {
+            QAction *newFileAction = menu.addAction("新建文件");
+            connect(newFileAction, &QAction::triggered, this, [=]() {
+                // 先弹出一个对话框，让用户输入文件名
+                QString fileName = QInputDialog::getText(myComputerWindow, "新建文件", "请输入文件名");
+                // 如果用户点击取消，直接返回
+                if (fileName.isEmpty()) {
+                    return;
+                }
+                createNewFile(name.toStdString(),fileName.toStdString());
+            });
+
+            QAction *newFolderAction = menu.addAction("新建文件夹");
+            connect(newFolderAction, &QAction::triggered, this, &MyComputerButton::createNewFolder);
+
+            QAction *deleteFolderAction = menu.addAction("删除文件夹");
+            connect(deleteFolderAction, &QAction::triggered, this, &MyComputerButton::deleteFolder);
+
+            QAction *renameFolderAction = menu.addAction("重命名文件夹");
+            connect(renameFolderAction, &QAction::triggered, this, &MyComputerButton::renameFolder);
+        }
+        menu.exec(treeView->mapToGlobal(pos));
+    } });
+
         // 显示新窗口
         myComputerWindow->setCentralWidget(treeView);
         myComputerWindow->show();
     }
 
-    void addTreeItems(QStandardItem *parentItem, const QList<DirectoryEntry *> &entries)
+    // 新建文件
+    void createNewFile(string folderName, string fileName)
     {
-        foreach (DirectoryEntry *entry, entries)
-        {
-            QStandardItem *item = new QStandardItem(entry->name);
-            parentItem->appendRow(item);
+        File *file = new File(fileName);
+        // 遍历root，找到folderName对应的文件夹
+        Folder *target_folder = findFolder(root, folderName);
 
-            // 递归添加子目录和子文件
-            addTreeItems(item, entry->subdirectories);
-            addTreeItems(item, entry->files);
+        // 在文件夹中添加文件
+        target_folder->Add_file(file);
+
+        parseFolderInfo(root);
+
+        string *fileNamePtr = new string(fileName);
+        FileInfo *fileInfo = new FileInfo(findFolder(root, folderName), fileNamePtr);
+
+        DataGenerationProcess::create("数据生成进程", 1, 1, fileInfo, OperationCommand::CREATE_FILE);
+
+        // taskScheduler->schedule();
+        scheduler.schedule();
+    }
+
+    // 新建文件夹
+    void createNewFolder()
+    {
+        // todo
+    }
+
+    // 删除文件夹
+    void deleteFolder()
+    {
+        // todo
+    }
+
+    // 重命名文件夹
+    void renameFolder()
+    {
+        // todo
+    }
+
+    // 读写文件
+    void readFile()
+    {
+        // todo
+    }
+
+    // 重命名文件
+    void renameFile()
+    {
+        // todo
+    }
+
+    // 删除文件
+    void deleteFile()
+    {
+        // todo
+    }
+
+    // 递归遍历root，找到名为folderName的文件夹
+    Folder *findFolder(Folder *nowFolder, string folderName)
+    {
+        if (nowFolder->get_Name() == folderName)
+        {
+            return nowFolder;
+        }
+
+        for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
+        {
+            Folder *folder = nowFolder->get_Folder_child()[i];
+            if (folder != nullptr)
+            {
+                return folder;
+            }
+        }
+
+        for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
+        {
+            Folder *folder = findFolder(nowFolder->get_Folder_child()[i], folderName);
+            if (folder != nullptr)
+            {
+                return folder;
+            }
         }
     }
 };
@@ -599,6 +721,8 @@ HelloWorld::HelloWorld(QWidget *parent)
     : QMainWindow(parent), ui(new Ui_HelloWorld)
 {
     ui->setupUi(this);
+
+    initProc.execute();
 
     /**
      * 总体窗口部分
@@ -618,6 +742,8 @@ HelloWorld::HelloWorld(QWidget *parent)
      */
 
     MyComputerButton *mycomputer_btn = new MyComputerButton(this, 0);
+
+    mycomputer_btn->set_root(initProc.get_folder());
 
     // 创建文本文件图标,假设此图标指向的文件路径为root/first.txt
     TextFileButton *textFileIcon = new TextFileButton(this, mycomputer_btn->height(), "root/first.txt");
@@ -759,11 +885,6 @@ HelloWorld::HelloWorld(QWidget *parent)
         // 设置标签的文本
         timeLabel->setText(currentTime); });
     timer->start(1000); // 启动定时器，每秒触发一次
-
-    // 尝试接入进程系统
-
-    TaskScheduler taskScheduler;
-    InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS).execute();
 }
 
 HelloWorld::~HelloWorld()
@@ -866,17 +987,6 @@ void HelloWorld::showTaskManager()
     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 使列自动拉伸以填充整个宽度
     // 将进程表格添加到进程选项卡中
     processLayout->addWidget(tableWidget);
-
-    // // 添加一些示例行
-    // for (int i = 0; i < 10; ++i)
-    // {
-    //     tableWidget->insertRow(i);
-    //     tableWidget->setItem(i, 0, new QTableWidgetItem("任务" + QString::number(i + 1)));
-    //     tableWidget->setItem(i, 1, new QTableWidgetItem("运行中"));
-    //     // 其他列也可以这样设置
-    // }
-
-    
 
     // 创建内存UI，8*8网格，每个网格中显示一个占用该内存块的进程id，被同一个进程占用的内存块显示为同一种颜色（随机生成但不为黑白两色）
     MemoryWidget *memoryWidget = new MemoryWidget(memoryTab);
