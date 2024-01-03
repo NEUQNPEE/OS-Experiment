@@ -64,10 +64,6 @@ std::string File::get_Change_time()
 {
     return this->Change_time;
 }
-std::string File::get_Content()
-{
-    return ReadFile(std::to_string(this->ID));
-}
 Folder *File::get_Dad()
 {
     return this->dad;
@@ -790,7 +786,8 @@ void tree_dir_diser(std::string str)
 }
 
 // 初始化函数
-Folder *init()
+
+Folder *init_root()
 {
     tree_dir_diser(gotoString(ReadDirectoryInfo()));
     return root;
@@ -822,7 +819,8 @@ bool file_is_repeat(Folder *folder, std::string str)
 }
 
 // 添加文件接口
-File *add_file(Folder *folder, std::string str)
+
+File *folder_add_file(Folder *folder, std::string str)
 {
     File *file = new File(str);
     folder->Add_file(file);
@@ -831,7 +829,7 @@ File *add_file(Folder *folder, std::string str)
 }
 
 // 添加文件夹接口
-Folder *add_folder(Folder *folder, std::string str)
+Folder *folder_add_folder(Folder *folder, std::string str)
 {
     Folder *child_folder = new Folder(str);
     folder->Add_folder(child_folder);
@@ -850,7 +848,7 @@ void delete_folder(Folder *folder)
 void delete_file(File *file)
 {
     file->delete_File();
-    DeleteFile(std::to_string(file->get_ID()));
+    DeleteFile(file->get_ID());
     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
 }
 
@@ -871,10 +869,10 @@ File *file_change_name(File *file, std::string name)
 }
 
 // 改文件内容
-File *file_change_content(File *file, std::string content)
+File *file_change_content(File *file, std::string content, int p_id)
 {
     file->set_Content(content);
-    WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
+    WriteFile(file->get_ID(), content, gotoChar(tree_dir_ser()), p_id);
     return file;
 }
 
@@ -891,9 +889,9 @@ std::vector<File *> get_file_child(Folder *folder)
 }
 
 // 打开文件
-std::string look_file_content(File *file)
+std::string look_file_content(File *file, int p_id)
 {
-    return file->get_Content();
+    return ReadFile(file->get_ID(), p_id);
 }
 
 // 查看文件属性

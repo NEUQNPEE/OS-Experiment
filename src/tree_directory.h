@@ -48,7 +48,6 @@ public:
     int get_Size();
     std::string get_Create_time();
     std::string get_Change_time();
-    std::string get_Content();
     Folder *get_Dad();
 
     // 写文件属性函数
@@ -154,7 +153,7 @@ public:
 };
 
 // 树形目录序列化生成
-void tree_dir_ser_gen(std::string str);
+void tree_dir_ser_gen(std::string *str);
 
 // 树形目录序列化
 std::string tree_dir_ser();
@@ -166,19 +165,19 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 void tree_dir_diser(std::string str);
 
 // 初始化函数
-Folder *init();
+Folder *init_root();
 
 // 判断文件夹是否重名
 bool folder_is_repeat(Folder *folder, std::string str);
 
 // 判断文件是否重名接口
-bool is_repeat(Folder *folder, std::string str);
+bool file_is_repeat(Folder *folder, std::string str);
 
 // 添加文件接口
-File *add_file(Folder *folder, std::string str);
+File *folder_add_file(Folder *folder, std::string str);
 
 // 添加文件夹接口
-Folder *add_folder(Folder *folder, std::string str);
+Folder *folder_add_folder(Folder *folder, std::string str);
 
 // 删除文件夹
 void delete_folder(Folder *folder);
@@ -193,7 +192,7 @@ Folder *folder_change_name(Folder *folder, std::string name);
 File *file_change_name(File *file, std::string name);
 
 // 改文件内容
-File *file_change_content(File *file, std::string content);
+File *file_change_content(File *file, std::string content, int p_id);
 
 // 获得文件夹的子文件夹
 std::vector<Folder *> get_folder_child(Folder *folder);
@@ -202,7 +201,7 @@ std::vector<Folder *> get_folder_child(Folder *folder);
 std::vector<File *> get_file_child(Folder *folder);
 
 // 打开文件
-std::string look_file_content(File *file);
+std::string look_file_content(File *file, int p_id);
 
 // 查看文件属性
 std::vector<std::string> look_file(File *file);

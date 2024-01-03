@@ -6,7 +6,9 @@
 #include <string>
 #include <fcntl.h>
 #include "tree_directory.h"
-#include "memoryBlock.h"
+
+// #include "memoryBlock.h"
+
 using namespace std;
 
 /**
@@ -127,7 +129,6 @@ public:
 };
 
 
-ProcessManager processManager;
 
 /**
  * 初始化进程,直到操作系统关闭才会释放内存
@@ -158,8 +159,6 @@ public:
     void execute() override;
 
     void destroy() override;
-
-    static void judge_is_repeat(Folder *folder, string str);
 };
 
 /**
@@ -225,8 +224,6 @@ public:
  * 任务调度类
 */
 class TaskScheduler {
-private:
-    std::mutex mutex_;  // 用于保护共享资源
 public:
     std::vector<std::thread> threads;  // 存储线程对象的容器
 
