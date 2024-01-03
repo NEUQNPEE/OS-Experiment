@@ -689,42 +689,49 @@ std::string tree_dir_ser()
 // 树形目录反序列化生成
 void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::queue<std::string> inform)
 {
-    std::queue<Folder *> q;
-    std::queue<int> q_num;
-    root->folder_deserialize(inform.front());
-    q.push(root);
-    q_num.push(child_num.front());
-    type.pop();
-    child_num.pop();
-    inform.pop();
-    while (q.empty() == false)
+    if (inform.empty() == true)
     {
-        int n = q_num.front();
-        q_num.pop();
-        for (int i = 0; i < n; i++)
+        return;
+    }
+    else
+    {
+        std::queue<Folder *> q;
+        std::queue<int> q_num;
+        root->folder_deserialize(inform.front());
+        q.push(root);
+        q_num.push(child_num.front());
+        type.pop();
+        child_num.pop();
+        inform.pop();
+        while (q.empty() == false)
         {
-            if (type.front() == 1)
+            int n = q_num.front();
+            q_num.pop();
+            for (int i = 0; i < n; i++)
             {
-                type.pop();
-                Folder *folder_child_folder = new Folder("新建文件夹");
-                folder_child_folder->folder_deserialize(inform.front());
-                inform.pop();
-                q.front()->Add_folder(folder_child_folder, 0);
-                q.push(folder_child_folder);
-                q_num.push(child_num.front());
-                child_num.pop();
+                if (type.front() == 1)
+                {
+                    type.pop();
+                    Folder *folder_child_folder = new Folder("新建文件夹");
+                    folder_child_folder->folder_deserialize(inform.front());
+                    inform.pop();
+                    q.front()->Add_folder(folder_child_folder, 0);
+                    q.push(folder_child_folder);
+                    q_num.push(child_num.front());
+                    child_num.pop();
+                }
+                else
+                {
+                    type.pop();
+                    child_num.pop();
+                    File *folder_child_file = new File("新建文件");
+                    folder_child_file->file_deserialize(inform.front());
+                    inform.pop();
+                    q.front()->Add_file(folder_child_file, 0);
+                }
             }
-            else
-            {
-                type.pop();
-                child_num.pop();
-                File *folder_child_file = new File("新建文件");
-                folder_child_file->file_deserialize(inform.front());
-                inform.pop();
-                q.front()->Add_file(folder_child_file, 0);
-            }
+            q.pop();
         }
-        q.pop();
     }
 }
 
