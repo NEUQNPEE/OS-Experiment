@@ -208,6 +208,117 @@ public:
         // 更新标签
         label->update();
     }
+
+    // 解析传来的信息:1:1024块磁盘的占用情况，是一个1024大小的std：bool数组
+    void parseDiskBlocksInfo(std::vector<bool> diskBlocksInfo)
+    {
+        // 遍历数组，将每个盘块的占用情况显示出来
+        for (int i = 0; i < diskBlocksInfo.size(); ++i)
+        {
+            draw(diskBlocksInfo[i], i);
+        }
+    }
+};
+
+// 成组链块情况展示
+class GroupBlockWidget : public QWidget
+{
+private:
+    // 八个布局，每个布局对应一个组
+    std::vector<QGridLayout *> groupLayouts;
+public:
+    // 初始化函数
+    GroupBlockWidget(QWidget *parent = nullptr) : QWidget(parent)
+    {
+        // 成组链块分八个组，每组有128个盘块（4*32的网格布局），使用QSplitter分割
+        QSplitter *splitter = new QSplitter(this);
+        QVBoxLayout *mainLayout = new QVBoxLayout(this);
+        mainLayout->addWidget(splitter);
+
+        // 创建八个组的布局
+        for (int i = 0; i < 8; ++i)
+        {
+            QFrame *frame = new QFrame();
+            frame->setFrameStyle(QFrame::Box | QFrame::Raised); // 设置边框样式为凸起的方框
+            frame->setLineWidth(2);                             // 设置边框宽度
+            QVBoxLayout *layout = new QVBoxLayout(frame);
+            layout->setContentsMargins(5, 5, 5, 5); // 设置布局边距
+
+            // 组名称标签
+            QLabel *label = new QLabel(QString("组%1").arg(i + 1), frame);
+            label->setAlignment(Qt::AlignCenter);
+            layout->addWidget(label);
+
+            // 创建网格布局
+            QGridLayout *gridLayout = new QGridLayout();
+            gridLayout->setSpacing(2);
+            layout->addLayout(gridLayout);
+
+            // 生成空白的网格
+            for (int row = 0; row < 32; ++row)
+            {
+                for (int col = 0; col < 4; ++col)
+                {
+                    QLabel *label = new QLabel(this);
+                    label->setAlignment(Qt::AlignCenter);
+                    label->setStyleSheet(QString("background-color: white"));
+
+                    // 边框
+                    label->setFrameStyle(QFrame::Box | QFrame::Raised);
+
+                    // 标签大小最小为10x10
+                    label->setMinimumSize(10, 10);
+
+                    // 将标签添加到网格布局中
+                    gridLayout->addWidget(label, row, col);
+                }
+            }
+
+            // 将组布局添加到分割器中
+            splitter->addWidget(frame);
+
+            // 将组布局添加到组布局数组中
+            groupLayouts.push_back(gridLayout);
+        }
+    }
+
+    // 供外部调用的绘制函数，参数第n块，块号
+    void draw(int n, int blockNumber)
+    {
+        // 找到第n个块所在的组，这个块显示块号
+        int groupNumber = n / 128;
+        int blockNumberInGroup = n % 128;
+
+        // 获取网格布局中的标签
+        QLabel *label = static_cast<QLabel *>(groupLayouts[groupNumber]->itemAtPosition(blockNumberInGroup / 4, blockNumberInGroup % 4)->widget());
+
+        // 设置标签
+        label->setText(QString::number(blockNumber));
+    }
+
+    // 解析传来的信息：1024+8大小的int数组，如果是-1说明进入下一个组，否则显示块号，如果是-2说明结束
+    void parseGroupBlocksInfo(std::vector<int> groupBlocksInfo)
+    {
+        int n = 0;
+        // 遍历数组，将每个盘块的占用情况显示出来
+        for (int i = 0; i < groupBlocksInfo.size(); ++i)
+        {
+            if (groupBlocksInfo[i] == -2)
+            {
+                break;
+            }
+            else if (groupBlocksInfo[i] == -1)
+            {
+                continue;
+            }
+            else
+            {
+                draw(n, groupBlocksInfo[i]);
+                n++;
+            }
+        }
+    }
+
 };
 
 class TextFileButton : public QPushButton
@@ -697,20 +808,32 @@ void HelloWorld::showTaskManager()
     QWidget *memoryTab = new QWidget(tabWidget);
     QWidget *diskTab = new QWidget(tabWidget);
 
+    // 添加成组链块选项卡
+    QWidget *groupBlockTab = new QWidget(tabWidget);
+
+    // 再加一个选项卡
+    QWidget *anotherTab = new QWidget(tabWidget);
+
     // 创建布局管理器
     QVBoxLayout *processLayout = new QVBoxLayout(processTab);
     QVBoxLayout *memoryLayout = new QVBoxLayout(memoryTab);
     QVBoxLayout *diskLayout = new QVBoxLayout(diskTab);
+    QVBoxLayout *groupBlockLayout = new QVBoxLayout(groupBlockTab);
+    QVBoxLayout *anotherLayout = new QVBoxLayout(anotherTab);
 
     // 将布局管理器设置给选项卡
     processTab->setLayout(processLayout);
     memoryTab->setLayout(memoryLayout);
     diskTab->setLayout(diskLayout);
+    groupBlockTab->setLayout(groupBlockLayout);
+    anotherTab->setLayout(anotherLayout);
 
     // 将选项卡添加到选项卡窗口中
     tabWidget->addTab(processTab, "进程");
     tabWidget->addTab(memoryTab, "内存");
     tabWidget->addTab(diskTab, "磁盘");
+    tabWidget->addTab(groupBlockTab, "成组链块");
+    tabWidget->addTab(anotherTab, "其他");
 
     // 将选项卡窗口设置为任务管理器窗口的中心部件
     taskManagerWindow->setCentralWidget(tabWidget);
@@ -742,6 +865,10 @@ void HelloWorld::showTaskManager()
     DiskWidget *diskWidget = new DiskWidget(diskTab);
     diskLayout->addWidget(diskWidget);
 
+    // 创建成组链块UI，显示成组链块的使用情况，每个组有128个盘块，一共有8个组，每个组用一个小长方形显示，如果某一块被占用，则显示为蓝色，否则显示为白色
+    GroupBlockWidget *groupBlockWidget = new GroupBlockWidget(groupBlockTab);
+    groupBlockLayout->addWidget(groupBlockWidget);
+
     // 测试用例：将内存块号为0-7的内存块分配给进程1，内存块号为8-15的内存块分配给进程2
     for (int i = 0; i < 8; ++i)
     {
@@ -757,6 +884,28 @@ void HelloWorld::showTaskManager()
     {
         diskWidget->draw(true, i);
     }
+
+    // 测试用例：生成长度为1024+8的int数组，以128个1，一个-1，128个2，一个-1，128个3，一个-1，...，128个8，最后一个-2结尾
+    std::vector<int> groupBlocksInfo;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        for (int j = 0; j < 128; ++j)
+        {
+            groupBlocksInfo.push_back((i + 1)*4);
+        }
+        if (i != 7)
+        {
+            groupBlocksInfo.push_back(-1);
+        }
+        else
+        {
+            groupBlocksInfo.push_back(-2);
+        }
+    }
+
+    // 解析传来的信息
+    groupBlockWidget->parseGroupBlocksInfo(groupBlocksInfo);
 
     // 显示任务管理器窗口
     taskManagerWindow->show();
