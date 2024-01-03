@@ -9,7 +9,7 @@ using namespace std;
 
 // 总计64个内存块
 memoryBlock memory_block[64];
-//64个内存块被进程调度的记录。数值为调用进程的ID，-1则表明没有进程占用
+// 64个内存块被进程调度的记录。数值为调用进程的ID，-1则表明没有进程占用
 vector<int> process_memory_record;
 
 // 模拟内存
@@ -44,13 +44,13 @@ char *ReadDirectoryInfo()
 // 初始化内存块
 void initialMemoryBlock()
 {
-    //初始化64个内存块
+    // 初始化64个内存块
     for (int i = 0; i < 64; i++)
     {
         memory_block[i].block_id = i;
         memory_block[i].begin = i * 40;
     }
-    //初始化64个内存块被进程调度的记录
+    // 初始化64个内存块被进程调度的记录
     process_memory_record.resize(64, -1);
 }
 
@@ -86,7 +86,8 @@ vector<int> initialBlock_ids(int write_process_id)
             {
                 cout << "警告!已无空闲内存块!内存溢出!";
                 fill(block_ids, block_ids + 8, -1);
-                // generate(block_ids, block_ids + 8, temp);
+                for (int j = 0; j < 8; j++)
+                    temp.push_back(block_ids[j]);
                 return temp;
             }
             if (memory_block[j].page_id < 0)
@@ -102,14 +103,15 @@ vector<int> initialBlock_ids(int write_process_id)
         memory_block[block_ids[i]].process_id = write_process_id;
     }
 
-    // generate(block_ids, block_ids + 8, temp);
+    for (int j = 0; j < 8; j++)
+        temp.push_back(block_ids[j]);
     return temp;
 }
 
 // 释放进程占用的八个内存块
 void clearBlock_ids(int clear_process_id)
 {
-    //当前进程是否为释放内存块的进程
+    // 当前进程是否为释放内存块的进程
     for (int i = 0; i < 8; i++)
     {
         if (memory_block[block_ids[i]].process_id == clear_process_id)
@@ -120,10 +122,10 @@ void clearBlock_ids(int clear_process_id)
             block_ids[i] = -1;
         }
     }
-    //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
-    for(int i = 0; i < 64; i++)
+    // 如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
+    for (int i = 0; i < 64; i++)
     {
-        if(memory_block[i].process_id == clear_process_id)
+        if (memory_block[i].process_id == clear_process_id)
         {
             memory_block[i].page_id = -1;
             memory_block[i].status = 0;
@@ -140,7 +142,7 @@ void clearBlock_ids(int clear_process_id)
 // 记录内存块调度状况
 void recordProcess_memory()
 {
-    for(int i = 0; i < 64; i++)
+    for (int i = 0; i < 64; i++)
     {
         process_memory_record[i] = memory_block[i].process_id;
     }
@@ -241,15 +243,16 @@ int CLOCK(int page)
 void WriteFile(int file_id, string file_content, char *write_dir_info, int write_process_id)
 {
     // 搜索由哪八个内存块负责该进程
-    int j = 0;  //遍历block_ids
-    for(int i = 0; i < 64; i++) //遍历memory_block
+    int j = 0;                   // 遍历block_ids
+    for (int i = 0; i < 64; i++) // 遍历memory_block
     {
-        if(memory_block[i].process_id == write_process_id)
+        if (memory_block[i].process_id == write_process_id)
         {
             block_ids[j] = memory_block[i].block_id;
             j++;
         }
-        if(j == 8)break;
+        if (j == 8)
+            break;
     }
 
     string ans = "";
@@ -289,7 +292,7 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
     // 更新目录信息
     disk.save_dir_info(write_dir_info);
     // 释放内存
-    //clearBlock_ids();
+    // clearBlock_ids();
 }
 
 // 从磁盘读取文件内容
@@ -314,15 +317,16 @@ char *ReadMemoryBlock(int memory_block_id, int size)
 string ReadFile(int file_id, int read_process_id)
 {
     // 搜索由哪八个内存块负责该进程
-    int j = 0;  //遍历block_ids
-    for(int i = 0; i < 64; i++) //遍历memory_block
+    int j = 0;                   // 遍历block_ids
+    for (int i = 0; i < 64; i++) // 遍历memory_block
     {
-        if(memory_block[i].process_id == read_process_id)
+        if (memory_block[i].process_id == read_process_id)
         {
             block_ids[j] = memory_block[i].block_id;
             j++;
         }
-        if(j == 8)break;
+        if (j == 8)
+            break;
     }
 
     // 查找文件id对应的磁盘块id
@@ -368,7 +372,7 @@ string ReadFile(int file_id, int read_process_id)
     }
 
     // 释放内存
-    //clearBlock_ids();
+    // clearBlock_ids();
 
     // return ans;
     return file_content;
@@ -391,7 +395,7 @@ void DeleteFile(int file_id)
     disk.delete_file_info(block_id);
 }
 
-//返回当前进程对内存块的调度状况
+// 返回当前进程对内存块的调度状况
 vector<int> getProcessRecord()
 {
     return process_memory_record;
@@ -408,4 +412,3 @@ vector<int> memory_get_group_block_status()
 {
     return disk.get_group_block_status();
 }
-
