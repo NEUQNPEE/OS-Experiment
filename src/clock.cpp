@@ -3,10 +3,18 @@
 #include "memory.h"
 #include "memoryBlock.h"
 #include "disk.h"
-
-// #include "process_manager.h"
+#include "process_manager.h"
 
 using namespace std;
+
+// 总计64个内存块
+memoryBlock memory_block[64];
+// 用于当前进程的八个内存块的块号
+int block_ids[8];
+// 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
+string page_content[1024];
+//64个内存块被进程调度的记录。数值为调用进程的ID，-1则表明没有进程占用
+vector<int> process_memory_record;
 
 // 模拟内存
 char memory[2560];
@@ -15,12 +23,12 @@ vector<int> fat_list;
 // 目录信息
 char *dir_info;
 // 文件ID和文件起始盘块号的映射
-unordered_map<string, int> file_id_block_map;
+unordered_map<int, int> file_id_block_map;
 
 // 用于装入文件的八个内存块的块号
-// int block_ids[8];
+int block_ids[8];
 // 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
-// string page_content[1024];
+string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
@@ -54,98 +62,79 @@ void initialMemory()
     dir_info = "";
 }
 
-// // 为进程分配八个内存块
-// bool initialBlock_ids(Process* &write_process)
-// {
-//     // 初始化FAT表，以防FAT表有更新
-//     fat_list = disk.get_fat_block_numbers();
-//     // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
-//     for (int i = 0; i < 8; i++)
-//     {
-//         for (int j = 0; j <= 64; j++)
-//         {
-//             if (j == 64)
-//             {
-//                 cout << "警告!已无空闲内存块!内存溢出!";
-//                 fill(block_ids, block_ids + 8, -1);
-//                 return false;
-//             }
-//             if (memory_block[j].page_id < 0)
-//             {
-//                 block_ids[i] = memory_block[j].block_id;
-//                 break;
-//             }
-//         }
-//     }
-//     // 八个内存块记录当前进程的ID
-//     for (int i = 0; i < 8; i++)
-//     {
-//         memory_block[block_ids[i]].process_id = write_process->pid;
-//     }
-//     //八个内存块的块号写入进程对象
-//     generate(block_ids, block_ids + 8, write_process->allocatedMemory);
-
-//     return true;
-// }
-
-// // 释放进程占用的八个内存块
-// void clearBlock_ids(Process* &clear_process)
-// {
-//     //当前进程是否为释放内存块的进程
-//     for (int i = 0; i < 8; i++)
-//     {
-//         if (memory_block[block_ids[i]].process_id == clear_process->pid)
-//         {
-//             memory_block[block_ids[i]].page_id = -1;
-//             memory_block[block_ids[i]].status = 0;
-//             memory_block[block_ids[i]].process_id = -1;
-//             block_ids[i] = -1;
-//         }
-//     }
-//     //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
-//     for(int i = 0; i < 64; i++)
-//     {
-//         if(memory_block[i].process_id == clear_process->pid)
-//         {
-//             memory_block[i].page_id = -1;
-//             memory_block[i].status = 0;
-//             memory_block[i].process_id = -1;
-//         }
-//     }
-
-//     //清空释放进程的内存块地址
-//     clear_process->allocatedMemory.clear();
-//     // 顺带把暂存页内容的page_content清空
-//     fill(page_content, page_content + 1024, "");
-//     // 顺带把当前进程调度内存块的状况清空
-//     // clock_record.clear();
-// }
-
-// 记录内存块调度状况
-void recordBlock_ids()
+// 为进程分配八个内存块
+vector<int> initialBlock_ids(int write_process_id)
 {
-    string ans = "";
+    vector<int> temp;
+    // 初始化FAT表，以防FAT表有更新
+    fat_list = disk.get_fat_block_numbers();
+    // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
     for (int i = 0; i < 8; i++)
     {
-        // 判断内存块是否装页
-        if (memory_block[block_ids[i]].page_id < 0)
-            continue;
-
-        ans = ans + "块号:" + to_string(block_ids[i]) + ',';
-        ans = ans + "进程号:" + to_string(memory_block[block_ids[i]].process_id) + ',';
-        ans = ans + "页号:" + to_string(memory_block[block_ids[i]].page_id) + ',';
-        ans = ans + "内容:";
-        for (int i = memory_block[block_ids[i]].begin; (i - memory_block[block_ids[i]].begin) < 40; i++)
+        for (int j = 0; j <= 64; j++)
         {
-            ans = ans + memory[i];
+            if (j == 64)
+            {
+                cout << "警告!已无空闲内存块!内存溢出!";
+                fill(block_ids, block_ids + 8, -1);
+                generate(block_ids, block_ids + 8, temp);
+                return temp;
+            }
+            if (memory_block[j].page_id < 0)
+            {
+                block_ids[i] = memory_block[j].block_id;
+                break;
+            }
         }
-        ans = ans + "\n";
     }
-    // 判断调度状况是否为空
-    if (ans == "")
-        return;
-    // 将调度情况插入当前进程调度内存块状况的vector数组
-    clock_record.push_back(ans);
+    // 八个内存块记录当前进程的ID
+    for (int i = 0; i < 8; i++)
+    {
+        memory_block[block_ids[i]].process_id = write_process_id;
+    }
+
+    generate(block_ids, block_ids + 8, temp);
+    return temp;
+}
+
+// 释放进程占用的八个内存块
+void clearBlock_ids(int clear_process_id)
+{
+    //当前进程是否为释放内存块的进程
+    for (int i = 0; i < 8; i++)
+    {
+        if (memory_block[block_ids[i]].process_id == clear_process_id)
+        {
+            memory_block[block_ids[i]].page_id = -1;
+            memory_block[block_ids[i]].status = 0;
+            memory_block[block_ids[i]].process_id = -1;
+            block_ids[i] = -1;
+        }
+    }
+    //如果当前进程不是释放内存块的进程，则从所有内存块中寻找并释放
+    for(int i = 0; i < 64; i++)
+    {
+        if(memory_block[i].process_id == clear_process_id)
+        {
+            memory_block[i].page_id = -1;
+            memory_block[i].status = 0;
+            memory_block[i].process_id = -1;
+        }
+    }
+
+    // 顺带把暂存页内容的page_content清空
+    fill(page_content, page_content + 1024, "");
+    // 顺带把当前进程调度内存块的状况清空
+    // clock_record.clear();
+}
+
+// 记录内存块调度状况
+void recordProcess_memory()
+{
+    for(int i = 0; i < 64; i++)
+    {
+        process_memory_record[i] = memory_block[i].process_id;
+    }
 }
 
 // 将文件页的内容填充到内存中。
@@ -240,10 +229,19 @@ int CLOCK(int page)
 }
 
 // 用户写文件内容
-void WriteFile(string file_id, string file_content, char *write_dir_info)
+void WriteFile(int file_id, string file_content, char *write_dir_info, int write_process_id)
 {
-    // 搜索由哪八个内存块负责装文件
-    // initialBlock_ids();
+    // 搜索由哪八个内存块负责该进程
+    int j = 0;  //遍历block_ids
+    for(int i = 0; i < 64; i++) //遍历memory_block
+    {
+        if(memory_block[i].process_id == write_process_id)
+        {
+            block_ids[j] = memory_block[i].block_id;
+            j++;
+        }
+        if(j == 8)break;
+    }
 
     string ans = "";
     // 文件分页并装入内存
@@ -255,7 +253,7 @@ void WriteFile(string file_id, string file_content, char *write_dir_info)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
-        recordBlock_ids();
+        recordProcess_memory();
     }
 
     // 查找是否有不足40B的尾巴
@@ -265,7 +263,7 @@ void WriteFile(string file_id, string file_content, char *write_dir_info)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
-        recordBlock_ids();
+        recordProcess_memory();
     }
 
     // 内存中的文件内容写入磁盘，图省事直接用file_content
@@ -277,7 +275,7 @@ void WriteFile(string file_id, string file_content, char *write_dir_info)
     }
     else // 如果映射中不存在该文件，则添加
     {
-        file_id_block_map.insert(pair<string, int>(file_id, disk_block_id));
+        file_id_block_map.insert(pair<int, int>(file_id, disk_block_id));
     }
     // 更新目录信息
     disk.save_dir_info(write_dir_info);
@@ -304,10 +302,19 @@ char *ReadMemoryBlock(int memory_block_id, int size)
 }
 
 // 文件管理系统调用，读文件。
-string ReadFile(string file_id)
+string ReadFile(int file_id, int read_process_id)
 {
-    // 搜索由哪八个内存块负责装文件
-    // initialBlock_ids();
+    // 搜索由哪八个内存块负责该进程
+    int j = 0;  //遍历block_ids
+    for(int i = 0; i < 64; i++) //遍历memory_block
+    {
+        if(memory_block[i].process_id == read_process_id)
+        {
+            block_ids[j] = memory_block[i].block_id;
+            j++;
+        }
+        if(j == 8)break;
+    }
 
     // 查找文件id对应的磁盘块id
     int block_id = -1;
@@ -335,7 +342,7 @@ string ReadFile(string file_id)
         page_content[i] = file_content.substr(i * 40, 40);
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
-        recordBlock_ids();
+        recordProcess_memory();
         char *temp = ans + i * 40;
         temp = ReadMemoryBlock(write_block_id, 40);
     }
@@ -346,7 +353,7 @@ string ReadFile(string file_id)
         page_content[page_count] = file_content.substr(page_count * 40, remainder);
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
-        recordBlock_ids();
+        recordProcess_memory();
         char *temp = ans + page_count * 40;
         temp = ReadMemoryBlock(write_block_id, remainder);
     }
@@ -359,7 +366,7 @@ string ReadFile(string file_id)
 }
 
 // 用户删除文件
-void DeleteFile(string file_id)
+void DeleteFile(int file_id)
 {
     // 查找文件id对应的磁盘块id
     int block_id = -1;
