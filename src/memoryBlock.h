@@ -47,10 +47,11 @@ void initialMemoryBlock()
 }
 
 //创建进程时分配内存块,返回值标明是否分配成功
-bool initialBlock_ids(Process* &write_process);
+
+// bool initialBlock_ids(Process* &write_process);
 
 //撤销进程时释放内存块
-void clearBlock_ids(Process* &clear_process);
+// void clearBlock_ids(Process* &clear_process);
 
 //返回当前进程对内存块的调度状况
 vector<string> getProcessRecord()
