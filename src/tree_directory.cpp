@@ -1,6 +1,6 @@
 #include "tree_directory.h"
 
-// #include "memory.h"
+#include "memory.h"
 
 Folder *root = new Folder("root");
 std::string gettime()
@@ -830,61 +830,61 @@ bool file_is_repeat(Folder *folder, std::string str)
 
 // 添加文件接口
 
-// File *add_file(Folder *folder, std::string str)
-// {
-//     File *file = new File(str);
-//     folder->Add_file(file);
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-//     return file;
-// }
+File *add_file(Folder *folder, std::string str)
+{
+    File *file = new File(str);
+    folder->Add_file(file);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return file;
+}
 
-// // 添加文件夹接口
-// Folder *add_folder(Folder *folder, std::string str)
-// {
-//     Folder *child_folder = new Folder(str);
-//     folder->Add_folder(child_folder);
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-//     return child_folder;
-// }
+// 添加文件夹接口
+Folder *add_folder(Folder *folder, std::string str)
+{
+    Folder *child_folder = new Folder(str);
+    folder->Add_folder(child_folder);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return child_folder;
+}
 
-// // 删除文件夹
-// void delete_folder(Folder *folder)
-// {
-//     folder->delete_folder();
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-// }
+// 删除文件夹
+void delete_folder(Folder *folder)
+{
+    folder->delete_folder();
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
 
-// // 删除文件
-// void delete_file(File *file)
-// {
-//     file->delete_File();
-//     DeleteFile(std::to_string(file->get_ID()));
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-// }
+// 删除文件
+void delete_file(File *file)
+{
+    file->delete_File();
+    DeleteFile(std::to_string(file->get_ID()));
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+}
 
-// // 改文件夹名接口
-// Folder *folder_change_name(Folder *folder, std::string name)
-// {
-//     folder->set_Name(name);
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-//     return folder;
-// }
+// 改文件夹名接口
+Folder *folder_change_name(Folder *folder, std::string name)
+{
+    folder->set_Name(name);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return folder;
+}
 
-// // 改文件名
-// File *file_change_name(File *file, std::string name)
-// {
-//     file->set_Name_Type(name);
-//     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-//     return file;
-// }
+// 改文件名
+File *file_change_name(File *file, std::string name)
+{
+    file->set_Name_Type(name);
+    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return file;
+}
 
-// // 改文件内容
-// File *file_change_content(File *file, std::string content)
-// {
-//     file->set_Content(content);
-//     WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
-//     return file;
-// }
+// 改文件内容
+File *file_change_content(File *file, std::string content)
+{
+    file->set_Content(content);
+    WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
+    return file;
+}
 
 
 // 获得文件夹的子文件夹

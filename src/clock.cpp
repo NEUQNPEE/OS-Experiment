@@ -8,6 +8,15 @@
 
 using namespace std;
 
+// 模拟内存
+char memory[2560];
+// 内存管理系统存储的fat表
+vector<int> fat_list;
+// 目录信息
+char *dir_info;
+// 文件ID和文件起始盘块号的映射
+unordered_map<string, int> file_id_block_map;
+
 // 用于装入文件的八个内存块的块号
 // int block_ids[8];
 // 正在装入内存的文件分块后的各文件页。页最多为1024（40KB/40B）
