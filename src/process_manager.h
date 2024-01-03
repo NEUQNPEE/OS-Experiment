@@ -76,7 +76,7 @@ private:
     std::string pipeName;
     int fileDescriptor;
 public:
-    NamedPipe(const std::string &name);
+    explicit NamedPipe(std::string name);
 
     ~NamedPipe();
 
@@ -84,7 +84,7 @@ public:
     void writeData(const std::string &data) const;
 
     // 从命名管道读取数据
-    std::string readData();
+    [[nodiscard]] std::string readData() const;
 };
 
 /**
@@ -98,7 +98,7 @@ public:
     ProcessState state;          // 进程状态
     ProcessType type;            // 进程类型
     vector<int> allocatedMemory; // 内存块地址
-    FileInfo fileInfo;           // 文件信息
+    FileInfo fileInfo{};           // 文件信息
     OperationCommand command;    // 操作命令
 
     Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -159,7 +159,7 @@ public:
 
     void destroy() override;
 
-    void judge_is_repeat(Folder *folder, string str);
+    static void judge_is_repeat(Folder *folder, string str);
 };
 
 /**
@@ -197,9 +197,9 @@ public:
     // 构造方法
     ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
-    void send_data_to_pipe(const std::string &data, const std::string &pipeName);
+    static void send_data_to_pipe(const std::string &data, const std::string &pipeName);
 
-    std::string receive_data_from_pipe(const std::string &pipeName);
+    static std::string receive_data_from_pipe(const std::string &pipeName);
 
     static void create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
 
