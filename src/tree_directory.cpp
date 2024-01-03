@@ -833,10 +833,10 @@ File *add_file(Folder *folder, std::string str)
 // 添加文件夹接口
 Folder *add_folder(Folder *folder, std::string str)
 {
-    Folder *folder = new Folder(str);
-    folder->Add_folder(folder);
+    Folder *child_folder = new Folder(str);
+    folder->Add_folder(child_folder);
     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
-    return folder;
+    return child_folder;
 }
 
 // 删除文件夹
@@ -859,6 +859,7 @@ Folder *folder_change_name(Folder *folder, std::string name)
 {
     folder->set_Name(name);
     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return folder;
 }
 
 // 改文件名
@@ -866,6 +867,7 @@ File *file_change_name(File *file, std::string name)
 {
     file->set_Name_Type(name);
     WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    return file;
 }
 
 // 改文件内容
@@ -873,6 +875,7 @@ File *file_change_content(File *file, std::string content)
 {
     file->set_Content(content);
     WriteFile(std::to_string(file->get_ID()), content, gotoChar(tree_dir_ser()));
+    return file;
 }
 
 // 获得文件夹的子文件夹
