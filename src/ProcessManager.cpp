@@ -48,6 +48,21 @@ bool Process::operator<(const Process &other) const {
     return priority < other.priority;
 }
 
+string Process::getProcessStateStr() const
+{
+    switch (state) {
+        case ProcessState::RUNNING:
+            return "运行";
+        case ProcessState::READY:
+            return "就绪";
+        case ProcessState::BLOCKED:
+            return "阻塞";
+        case ProcessState::FINISHED:
+            return "结束";
+        default:
+            return "";
+    }
+}
 
 // 从进程列表中删除该进程
 void ProcessManager::deleteProcess(int pid) {
@@ -66,6 +81,8 @@ InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
 
 InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
     auto *initProcess = new InitProcess(name, pid, priority, processType);
+    initProcess->state = ProcessState::RUNNING;
+
     // 将该进程放入进程列表
     processManager.processList.push_back(initProcess);
     return *initProcess;

@@ -22,6 +22,8 @@
 #include <QTimer>
 #include <QStandardItemModel>
 #include <QStyledItemDelegate>
+
+#include "process_manager.h"
 class HelloWorld : public QMainWindow
 {
     Q_OBJECT

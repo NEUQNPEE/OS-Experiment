@@ -56,6 +56,16 @@ public:
         label->setText(QString::number(processId));
     }
 
+    // 信息解析
+    void parseMemoryBlocksInfo(std::vector<int> memoryBlocksInfo)
+    {
+        // 遍历数组，将每个内存块的占用情况显示出来
+        for (int i = 0; i < memoryBlocksInfo.size(); ++i)
+        {
+            draw(memoryBlocksInfo[i], i);
+        }
+    }
+
 private:
     // 存储进程ID和颜色的映射
     std::map<int, QColor> colorMap;
@@ -148,6 +158,9 @@ public:
                 // 标签大小最小为10x10
                 label->setMinimumSize(10, 10);
 
+                // 标记第几块
+                label->setText(QString::number(row * 4 + col));
+
                 // 将标签添加到兑换区网格布局中
                 exchangeGridLayout->addWidget(label, row, col);
             }
@@ -166,6 +179,9 @@ public:
 
                 // 标签大小最小为10x10
                 label->setMinimumSize(10, 10);
+
+                // 标记第几块
+                label->setText(QString::number(row * 30 + col + 124));
 
                 // 将标签添加到文件区网格布局中
                 fileGridLayout->addWidget(label, row, col);
@@ -209,7 +225,7 @@ public:
         label->update();
     }
 
-    // 解析传来的信息:1:1024块磁盘的占用情况，是一个1024大小的std：bool数组
+    // 解析传来的信息1024块磁盘的占用情况，是一个1024大小的std：bool数组
     void parseDiskBlocksInfo(std::vector<bool> diskBlocksInfo)
     {
         // 遍历数组，将每个盘块的占用情况显示出来
@@ -743,6 +759,11 @@ HelloWorld::HelloWorld(QWidget *parent)
         // 设置标签的文本
         timeLabel->setText(currentTime); });
     timer->start(1000); // 启动定时器，每秒触发一次
+
+    // 尝试接入进程系统
+
+    TaskScheduler taskScheduler;
+    InitProcess::create("init", PIDGenerator::generatePID(), 0, ProcessType::INIT_PROCESS).execute();
 }
 
 HelloWorld::~HelloWorld()
@@ -840,21 +861,22 @@ void HelloWorld::showTaskManager()
 
     // 创建进程表格
     QTableWidget *tableWidget = new QTableWidget(0, 4, taskManagerWindow); // 4列
-    QStringList headers = {"任务名称", "任务状态", "内存", "磁盘"};
+    QStringList headers = {"进程名", "进程id", "进程状态", "使用内存块"};
     tableWidget->setHorizontalHeaderLabels(headers);
     tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch); // 使列自动拉伸以填充整个宽度
-
-    // 添加一些示例行
-    for (int i = 0; i < 10; ++i)
-    {
-        tableWidget->insertRow(i);
-        tableWidget->setItem(i, 0, new QTableWidgetItem("任务" + QString::number(i + 1)));
-        tableWidget->setItem(i, 1, new QTableWidgetItem("运行中"));
-        // 其他列也可以这样设置
-    }
-
     // 将进程表格添加到进程选项卡中
     processLayout->addWidget(tableWidget);
+
+    // // 添加一些示例行
+    // for (int i = 0; i < 10; ++i)
+    // {
+    //     tableWidget->insertRow(i);
+    //     tableWidget->setItem(i, 0, new QTableWidgetItem("任务" + QString::number(i + 1)));
+    //     tableWidget->setItem(i, 1, new QTableWidgetItem("运行中"));
+    //     // 其他列也可以这样设置
+    // }
+
+    
 
     // 创建内存UI，8*8网格，每个网格中显示一个占用该内存块的进程id，被同一个进程占用的内存块显示为同一种颜色（随机生成但不为黑白两色）
     MemoryWidget *memoryWidget = new MemoryWidget(memoryTab);
@@ -869,43 +891,31 @@ void HelloWorld::showTaskManager()
     GroupBlockWidget *groupBlockWidget = new GroupBlockWidget(groupBlockTab);
     groupBlockLayout->addWidget(groupBlockWidget);
 
-    // 测试用例：将内存块号为0-7的内存块分配给进程1，内存块号为8-15的内存块分配给进程2
-    for (int i = 0; i < 8; ++i)
+    std::vector<Process *> processList = get_process_list();
+    for (int i = 0; i < processList.size(); ++i)
     {
-        memoryWidget->draw(1, i);
-    }
-    for (int i = 8; i < 16; ++i)
-    {
-        memoryWidget->draw(2, i);
-    }
-
-    // 测试用例：将0-123号磁盘块改为占用状态
-    for (int i = 0; i < 124; ++i)
-    {
-        diskWidget->draw(true, i);
-    }
-
-    // 测试用例：生成长度为1024+8的int数组，以128个1，一个-1，128个2，一个-1，128个3，一个-1，...，128个8，最后一个-2结尾
-    std::vector<int> groupBlocksInfo;
-
-    for (int i = 0; i < 8; ++i)
-    {
-        for (int j = 0; j < 128; ++j)
+        tableWidget->insertRow(i);
+        QString processName = QString::fromStdString(processList[i]->name);
+        tableWidget->setItem(i, 0, new QTableWidgetItem(processName));
+        tableWidget->setItem(i, 1, new QTableWidgetItem(QString::number(processList[i]->pid)));
+        tableWidget->setItem(i, 2, new QTableWidgetItem(QString::fromLocal8Bit(processList[i]->getProcessStateStr())));
+        std::vector<int> memoryBlocks = processList[i]->allocatedMemory;
+        QString memoryBlocksStr = "";
+        for (int j = 0; j < memoryBlocks.size(); ++j)
         {
-            groupBlocksInfo.push_back((i + 1)*4);
+            memoryBlocksStr += QString::number(memoryBlocks[j]) + ",";
         }
-        if (i != 7)
-        {
-            groupBlocksInfo.push_back(-1);
-        }
-        else
-        {
-            groupBlocksInfo.push_back(-2);
-        }
+        tableWidget->setItem(i, 3, new QTableWidgetItem(memoryBlocksStr));
     }
 
-    // 解析传来的信息
-    groupBlockWidget->parseGroupBlocksInfo(groupBlocksInfo);
+    // 解析内存块信息
+    memoryWidget->parseMemoryBlocksInfo(show_process_record());
+
+    // 解析磁盘块信息
+    diskWidget->parseDiskBlocksInfo(show_disk_block_status());
+
+    // 解析成组链块信息
+    groupBlockWidget->parseGroupBlocksInfo(show_group_block_status());
 
     // 显示任务管理器窗口
     taskManagerWindow->show();

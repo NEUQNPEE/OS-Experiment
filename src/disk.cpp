@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-03 04:07:49
+ * @LastEditTime : 2024-01-03 23:09:32
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -807,6 +807,12 @@ std::vector<bool> DiskManager::get_disk_block_status()
         disk_block_status[i] = true;
     }
 
+    // 前124块兑换区块置为false
+    for (int i = 0; i < 124; i++)
+    {
+        disk_block_status[i] = false;
+    }
+
     // 其实是读成组链块的状态
     GroupBlock *temp_block = group_block_head;
     while (temp_block != nullptr)
@@ -814,8 +820,11 @@ std::vector<bool> DiskManager::get_disk_block_status()
         for(int block_number : temp_block->block_numbers)
         {
             // 空闲就置为false
-            disk_block_status[block_number] = false;
+            disk_block_status[block_number+124] = false;
         }
+
+        // 下一组
+        temp_block = temp_block->next_group_block;
     }
 
     return disk_block_status;
@@ -839,7 +848,7 @@ std::vector<int> DiskManager::get_group_block_status()
     {
         for(int block_number : temp_block->block_numbers)
         {
-            group_block_status[i] = block_number;
+            group_block_status[i] = block_number+124;
             i++;
         }
 

@@ -113,6 +113,9 @@ public:
 
     // 虚函数 destroy,用于销毁进程
     virtual void destroy() = 0;
+
+    // 获取进程状态的str
+    [[nodiscard]] string getProcessStateStr() const;
 };
 
 /**
@@ -238,3 +241,4 @@ public:
 vector<int> show_process_record();
 vector<bool> show_disk_block_status();
 vector<int> show_group_block_status();
+vector<Process *> get_process_list();
