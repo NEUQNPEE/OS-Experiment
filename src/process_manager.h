@@ -94,6 +94,16 @@ struct FileInfo {
         this->fileName = fileName;
     }
 
+    // get方法
+    string *getData() {
+        return this->data;
+    }
+
+    // set方法
+    void setData(string *data) {
+        this->data = data;
+    }
+
 };
 
 /**
