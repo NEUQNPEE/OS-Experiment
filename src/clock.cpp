@@ -293,14 +293,15 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
     }
     // 更新目录信息
     disk.save_dir_info(write_dir_info);
-    // 释放内存
-    // clearBlock_ids();
+    //清空文件页内容暂存
+    fill(page_content, page_content + 1024, "NULL");
 }
 
 // 从磁盘读取文件内容
 char *ReadDiskFile(int block_id)
 {
-    return disk.read_block(block_id);
+    fat_list = disk.read_fat(block_id);
+    return disk.read_blocks(fat_list);
 }
 
 // 读取内存块中的函数
@@ -358,8 +359,8 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
         recordProcess_memory();
-        char *temp = ans + i * 40;
-        temp = ReadMemoryBlock(write_block_id, 40);
+        //char *temp = ans + i * 40;
+        //temp = ReadMemoryBlock(write_block_id, 40);
     }
     // 查找是否有不足40B的尾巴
     int remainder = file_size % 40;
@@ -369,13 +370,12 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
         recordProcess_memory();
-        char *temp = ans + page_count * 40;
-        temp = ReadMemoryBlock(write_block_id, remainder);
+        //char *temp = ans + page_count * 40;
+        //temp = ReadMemoryBlock(write_block_id, remainder);
     }
 
-    // 释放内存
-    // clearBlock_ids();
-
+    //清空文件页内容暂存
+    fill(page_content, page_content + 1024, "NULL");
     // return ans;
     return file_content;
 }
