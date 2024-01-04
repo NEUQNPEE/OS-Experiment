@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-05 00:39:38
+ * @LastEditTime : 2024-01-05 02:44:26
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -11,6 +11,13 @@
 #include "HelloWorld.h"
 
 TaskScheduler &scheduler = TaskScheduler::getInstance();
+
+const std::string pipeName = "my_pipe";
+
+NamedPipe namedPipe(pipeName);
+
+// 本文件打开的次数
+int openTimes = 0;
 
 // 目录结点类型枚举类
 enum class FolderType
@@ -513,6 +520,8 @@ private:
     // 执行进程
     ExecutionProcess exeProc;
 
+    
+
 public:
     // 有参构造函数
     TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
@@ -534,6 +543,7 @@ public:
         // 读取文件内容
         readFileContent(fileInfo);
 
+        openTimes++;
     }
 
     bool eventFilter(QObject *obj, QEvent *event) override
@@ -547,7 +557,31 @@ public:
                 return true;
             }
         }
+
+        // 如果ctrl+p,调用同步函数
+        if (event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_P && keyEvent->modifiers() == Qt::ControlModifier)
+            {
+                
+            }
+        }
         return false;
+    }
+
+    // 同步函数
+    void sync()
+    {
+        if(openTimes==1)
+        {
+            ExecutionProcess::sendData(pipeName,"Hello from Process A!");
+        }
+
+        if(openTimes==2)
+        {
+            ExecutionProcess::renew(pipeName,&exeProc);
+        }
     }
 
     void saveFileContent()

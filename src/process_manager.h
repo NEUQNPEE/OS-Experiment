@@ -255,7 +255,7 @@ public:
 
     static std::string receiveData(const std::string &pipeName);
 
-    void renew(const std::string& pipeName);
+    static void renew(const std::string& pipeName,ExecutionProcess *executionProcess);
 
     static ExecutionProcess create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
 

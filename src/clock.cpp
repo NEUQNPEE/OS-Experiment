@@ -38,79 +38,58 @@ void recordProcess_memory()
     }
 }
 
-// 序列化文件ID和起始盘块号的映射
-string encodeMap()
-{
-    string ans = "##";
-    for (auto iter : file_id_block_map)
-    {
-        ans += to_string(iter.first) + " " + to_string(iter.second) + " ";
-    }
-    ans = ans + "##";
-    return ans;
-}
+// // 序列化文件ID和起始盘块号的映射
+// string encodeMap()
+// {
+//     string ans = "##";
+//     for (auto iter : file_id_block_map)
+//     {
+//         ans += to_string(iter.first) + " " + to_string(iter.second) + " ";
+//     }
+//     ans = ans + "##";
+//     return ans;
+// }
 
-// 解析序列化后的文件ID和起始盘块号的映射
-void decodeMap(string info)
-{
-    // 暂存解析出的数字
-    vector<int> temp;
-    // 如果是空映射
-    if (info.size() < 8)    //##1 2 ##
-        return;
-    // 去掉起始和末尾的分隔符##
-    int map_begin = info.find("##") + 2;
-    int map_end = info.rfind("##") - 1;
-    int len = map_end - map_begin + 1;
-    info = info.substr(map_begin, len);
+// // 解析序列化后的文件ID和起始盘块号的映射
+// void decodeMap(string info)
+// {
+//     // 暂存解析出的数字
+//     vector<int> temp;
+//     // 如果是空映射
+//     if (info.size() < 8) // ##1 2 ##
+//         return;
+//     // 去掉起始和末尾的分隔符##
+//     int map_begin = info.find("##") + 2;
+//     int map_end = info.rfind("##") - 1;
+//     int len = map_end - map_begin + 1;
+//     info = info.substr(map_begin, len);
 
-    // 解析文件ID和起始盘块号的映射
-    stringstream str(info);
-    string number;
-    while (str >> number)
-    {
-        temp.push_back(stoi(number));
-    }
-    int temp_size = temp.size();
-    for (int i = 0; i < temp_size - 1; i += 2)
-    {
-        file_id_block_map[temp[i]] = temp[i + 1];
-    }
-}
+//     // 解析文件ID和起始盘块号的映射
+//     stringstream str(info);
+//     string number;
+//     while (str >> number)
+//     {
+//         temp.push_back(stoi(number));
+//     }
+//     int temp_size = temp.size();
+//     for (int i = 0; i < temp_size - 1; i += 2)
+//     {
+//         file_id_block_map[temp[i]] = temp[i + 1];
+//     }
+// }
 
 // 写入目录信息和序列化后的ID和起始盘块号映射
 void WriteDirectoryInfo(char *info)
 {
-    string ans = encodeMap();
-    ans = info + ans;
-    char* ch = new char[ans.size() + 1];
-    strcpy(ch, ans.c_str());
-    disk.save_dir_info(ch);
+    disk.save_dir_info(info);
 }
 // 读取目录信息和序列化后的ID和起始盘块号映射
 char *ReadDirectoryInfo()
 {
-    // 获取目录信息起始盘块号
     int block_number = disk.get_dir_info_block_number();
-    vector<int> block_numbers = disk.read_fat(block_number);
-    // 读取目录信息,并反序列化映射
-    string info = disk.read_blocks(block_numbers);
-    int map_begin = info.find("##");
-    if (map_begin != info.npos) // 映射可能为空
-    {
-        string temp = info.substr(0, map_begin);
-        dir_info = new char[temp.length() + 1];
-        strcpy(dir_info, temp.c_str());
-        decodeMap(info.substr(map_begin));
-    }
-    else
-    {
-        // 把string转为char*，不然会报错
-        dir_info = new char[info.length() + 1];
-        strcpy(dir_info, info.c_str());
-    }
-
-    return dir_info;
+    // return disk.read_block(block_number);
+    std::vector<int> block_numbers = disk.read_fat(block_number);
+    return disk.read_blocks(block_numbers);
 }
 
 // 初始化内存块
@@ -183,7 +162,7 @@ vector<int> initialBlock_ids(int write_process_id)
     }
 
     recordProcess_memory();
-        
+
     return temp;
 }
 
@@ -219,8 +198,6 @@ void clearBlock_ids(int clear_process_id)
     // 顺带把当前进程调度内存块的状况清空
     // clock_record.clear();
 }
-
-
 
 // 将文件页的内容填充到内存中。
 void fillMemory(int page_id, int block_id)
@@ -333,8 +310,16 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
     // string ans = "";
     //  文件分页并装入内存
     int file_size = file_content.size(); // 文件长度
-    int page_count = file_size / 40;     // 文件分块后的页数
-    int write_block_id = -1;             // 写入的内存块的块号
+    int page_count;
+    if (file_content.size() == 0)
+    {
+        page_count = 0;
+    }
+    else
+    {
+        page_count = file_size / 40; // 文件分块后的页数
+    }
+    int write_block_id = -1;         // 写入的内存块的块号
     for (int i = 0; i < page_count; i++)
     {
         page_content[i] = file_content.substr(i * 40, 40);
@@ -365,7 +350,7 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
         file_id_block_map.insert(pair<int, int>(file_id, disk_block_id));
     }
     // 更新目录信息
-    disk.save_dir_info(write_dir_info);
+    WriteDirectoryInfo(write_dir_info);
     // 清空文件页内容暂存
     fill(page_content, page_content + 1024, "NULL");
 }

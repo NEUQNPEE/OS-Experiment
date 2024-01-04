@@ -20,7 +20,7 @@ NamedPipe::~NamedPipe() {
 // 写数据到命名管道
 void NamedPipe::writeData(const std::string &data) const {
     int a = write(fileDescriptor, data.c_str(), data.size());
-    std::cout << a << std::endl;
+    // std::cout << a << std::endl;
 }
 
 // 从命名管道读取数据
@@ -271,7 +271,7 @@ void ExecutionProcess::execute_write(File *file, ExecutionProcess *executionProc
                 for (auto & j : processManager.processList) {
                     if(j->pid==pid){
                         auto* executionProcess1=dynamic_cast<ExecutionProcess*>(j);
-                        executionProcess1->renew(to_string(executionProcess->pid));
+                        executionProcess1->renew(to_string(executionProcess->pid),executionProcess1);
                     }
                 }
             }
@@ -319,10 +319,10 @@ std::string ExecutionProcess::receiveData(const string &pipeName) {
     return NamedPipe(pipeName).readData();
 }
 
-void ExecutionProcess::renew(const std::string& pipeName) {
+void ExecutionProcess::renew(const std::string& pipeName,ExecutionProcess *executionProcess) {
     //将data更新为从管道获取的内容
     std::string newData=receiveData(pipeName);
-    this->fileInfo->data=&newData;
+    executionProcess->fileInfo->data=&newData;
 }
 
 

@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 23:50:11
+ * @LastEditTime : 2024-01-05 02:03:50
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -67,7 +67,7 @@ void DiskBlock::set_content(char *content)
     // 如果开头就是'\0'，说明没内容，直接写40个'\0'进去
     if (content[0] == '\0')
     {
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < 40; i++)
         {
             this->content[i] = '\0';
         }
@@ -76,11 +76,18 @@ void DiskBlock::set_content(char *content)
 
     // 检查content大小，如果小于磁盘块大小，就用空字符填充
     size_t length = strlen(content);
+    // 转换为int类型
+    int int_length = static_cast<int>(length);
+    if (int_length < 40)
+    {
+        strcpy(this->content, content);
+        return;
+    }
     // 强行将content的末尾置为'\0'
-    content[size - 1] = '\0';
+    content[40 - 1] = '\0';
 
     // 检查磁盘块大小是否足够
-    if (strlen(content) > size)
+    if (strlen(content) > 40)
     {
         std::cout << "磁盘块大小不足" << std::endl;
         return;
