@@ -183,6 +183,10 @@ void DataDeletionProcess::execute() {
     switch (command) {
         case OperationCommand::DELETE_FOLDER: {
             delete_folder(fileInfo.folder);
+//            bool delete_folder_success=delete_folder(fileInfo.folder);
+//            if(!delete_folder_success){
+//                fileInfo.
+//            }
             break;
         }
         case OperationCommand::DELETE_FILE: {
@@ -226,12 +230,17 @@ void ExecutionProcess::create(string name, int pid, int priority, FileInfo *file
 }
 
 void ExecutionProcess::execute() {
+    this->state = ProcessState::RUNNING;
+    execute_read(fileInfo.file, this);
     execute_user_input_command(fileInfo.file, this);
 }
 
 void ExecutionProcess::destroy() {
+    // 从用户文件表中删除对应的进程占用
+    close_file(fileInfo.file, this->pid);
     clearBlock_ids(this->pid);
     processManager.deleteProcess(this->pid);
+    // 将阻塞队列中的进程放入就绪队列
     if (!processManager.blockQueue.empty()) {
         processManager.readyQueue.push(processManager.blockQueue.front());
         processManager.blockQueue.front()->state = ProcessState::READY;
@@ -240,28 +249,39 @@ void ExecutionProcess::destroy() {
     delete this;
 }
 
+void ExecutionProcess::execute_read(File *file, ExecutionProcess *executionProcess){
+    std::string read_data = look_file_content(file, executionProcess->pid);
+    executionProcess->fileInfo.data=&read_data;
+}
+
 // 模拟执行用户输入的命令,参数为内存块地址
 void ExecutionProcess::execute_user_input_command(File *file, ExecutionProcess *executionProcess) {
     while (true) {
-        //todo 从QT不停获取用户输入的指令，比如读，写
-        UserInputCommand userInputCommand;
-        switch (userInputCommand) {
-            case UserInputCommand::READ_DATA: {
-                std::string data = look_file_content(file, executionProcess->pid);
-                //todo 在这里向QT发送data
-                break;
-            }
-            case UserInputCommand::WRITE_DATA: {
-                //todo 从QT获取用户输入的data
-                std::string data;
-                file_change_content(file, data, executionProcess->pid);
-                break;
-            }
-            case UserInputCommand::EXIT:
-
+        if(!processManager.commandQueue.empty()){
+            int command = processManager.commandQueue.front();
+            processManager.commandQueue.pop();
+            if (command == 0) {
+                // 退出
                 return;
-            default:
-                break;
+            } else if (command == 1) {
+                // 写入数据
+                file_change_content(file, *executionProcess->fileInfo.data, executionProcess->pid);
+                vector pids =look_open_file(file);
+                if(pids.size()>1){
+                    ExecutionProcess::sendData(to_string(this->pid), *executionProcess->fileInfo.data);
+                    for (int pid : pids) {
+                        if(pid!=this->pid){
+                            //从进程列表中找到该进程
+                            for (auto & j : processManager.processList) {
+                                if(j->pid==pid){
+                                    auto* executionProcess1=dynamic_cast<ExecutionProcess*>(j);
+                                    executionProcess1->renew(to_string(this->pid));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
