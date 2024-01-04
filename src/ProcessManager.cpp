@@ -166,8 +166,11 @@ void DataGenerationProcess::destroy() {
 DataDeletionProcess::DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
         : Process(name, pid, priority, state, type) {}
 
-void DataDeletionProcess::
+bool DataDeletionProcess::
 create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
+    if(command==OperationCommand::DELETE_FILE&&!look_open_file(fileInfo->file).empty()){
+        return false;
+    }
     auto *dataDeletionProcess = new DataDeletionProcess(name, pid, priority, ProcessState::READY,
                                                         ProcessType::DATA_DELETION_PROCESS);
     dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
@@ -177,16 +180,13 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(dataDeletionProcess);
     processManager.readyQueue.push(dataDeletionProcess);
+    return true;
 }
 
 void DataDeletionProcess::execute() {
     switch (command) {
         case OperationCommand::DELETE_FOLDER: {
             delete_folder(fileInfo.folder);
-//            bool delete_folder_success=delete_folder(fileInfo.folder);
-//            if(!delete_folder_success){
-//                fileInfo.
-//            }
             break;
         }
         case OperationCommand::DELETE_FILE: {

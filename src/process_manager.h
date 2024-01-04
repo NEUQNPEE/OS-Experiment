@@ -201,7 +201,7 @@ public:
     // 构造方法
     DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
-    static void create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    static bool create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
 
     void execute() override;
 
