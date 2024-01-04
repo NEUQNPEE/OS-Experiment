@@ -139,7 +139,7 @@ vector<int> initialBlock_ids(int write_process_id)
                     temp.push_back(block_ids[j]);
                 return temp;
             }
-            if (memory_block[j].page_id < 0)
+            if (memory_block[j].process_id < 0)
             {
                 block_ids[i] = memory_block[j].block_id;
                 break;
