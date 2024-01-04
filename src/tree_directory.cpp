@@ -150,6 +150,7 @@ void File::change_Addr(std::string str)
 // 构造函数
 File::File(std::string str)
 {
+    this->size = 0;
     this->name = str;
     this->Create_time = gettime();
     this->Change_time = gettime();
@@ -370,6 +371,7 @@ void Folder::change_Addr(std::string str)
 // 参构造函数
 Folder::Folder(std::string str)
 {
+    this->size = 0;
     this->name = str;
     this->dad = this;
     this->addr = str;

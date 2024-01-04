@@ -117,6 +117,7 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
                                                             ProcessType::DATA_GENERATION_PROCESS);
     dataGenerationProcess->fileInfo.fileName = fileInfo->fileName;
     dataGenerationProcess->fileInfo.folder = fileInfo->folder;
+    dataGenerationProcess->fileInfo.file = fileInfo->file;
     dataGenerationProcess->command = command;
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(dataGenerationProcess);
@@ -171,6 +172,7 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
                                                         ProcessType::DATA_DELETION_PROCESS);
     dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
     dataDeletionProcess->fileInfo.folder = fileInfo->folder;
+    dataDeletionProcess->fileInfo.file = fileInfo->file;
     dataDeletionProcess->command = command;
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(dataDeletionProcess);
