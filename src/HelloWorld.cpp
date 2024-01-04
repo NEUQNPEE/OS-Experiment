@@ -564,8 +564,10 @@ public:
 
 class CustomItemDelegate : public QStyledItemDelegate
 {
+    Folder *root;
+
 public:
-    explicit CustomItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
+    explicit CustomItemDelegate(Folder *root, QObject *parent = nullptr) : QStyledItemDelegate(parent) { this->root = root; }
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
     {
@@ -582,8 +584,17 @@ public:
         painter->setPen(option.palette.text().color());
 
         // 绘制图标（根据实际情况设置图标）
-        // 图标就先用WLGOO.png代替了
-        QIcon icon("icon/WLOGO.png");
+        // 获取当前节点的类型
+        FolderType type = static_cast<QFolderItem *>(index.internalPointer())->getType();
+        QIcon icon;
+        if (type == FolderType::FILE)
+        {
+            icon = QIcon("icon/textPicture.png");
+        }
+        else
+        {
+            icon = QIcon("icon/folderPicture.png");
+        }
 
         if (!icon.isNull())
         {
@@ -596,10 +607,50 @@ public:
         // 文本在图标右侧，所以需要调整矩形
         QRect textRect = option.rect.adjusted(5, 0, -5, 0);
         textRect.setLeft(textRect.left() + 25);
-
         // 绘制文本
         painter->drawText(textRect, Qt::AlignVCenter, text);
 
+        if (type == FolderType::FILE)
+        {
+            // 显示当前文件自己的属性，不是根目录的
+            File *file = static_cast<QFolderItem *>(index.internalPointer())->folder->get_File_child()[index.row()];
+            int size = file->get_Size();
+            string create_time = file->get_Create_time();
+            string change_time = file->get_Change_time();
+            // 将文件中的大小、创建时间、修改时间显示出来
+            // 显示的内容在text的右侧但是不要遮挡text的内容
+            QRect textRect = option.rect.adjusted(50, 0, -5, 0);
+            textRect.setLeft(textRect.left() + 25);
+
+            QString fileInfo = QString("大小：%1B  创建时间：%2  修改时间：%3")
+                                   .arg(size)
+                                   .arg(QString::fromLocal8Bit(create_time.c_str()))
+                                   .arg(QString::fromLocal8Bit(change_time.c_str()));
+            painter->drawText(textRect, Qt::AlignVCenter, fileInfo);
+        }
+
+        if (type == FolderType::FOLDER)
+        {
+            // 显示当前文件夹自己的属性，不是根目录的
+            Folder *folder = static_cast<QFolderItem *>(index.internalPointer())->folder;
+            int size = folder->get_Size();
+            int file_number = folder->get_File_number();
+            int folder_number = folder->get_Folder_number();
+            string create_time = folder->get_Create_time();
+            string change_time = folder->get_Change_time();
+            // 将文件夹中的大小、文件数目、文件夹数目、创建时间、修改时间显示出来
+            // 显示的内容在text的右侧但是不要遮挡text的内容
+            QRect textRect = option.rect.adjusted(50, 0, -5, 0);
+            textRect.setLeft(textRect.left() + 25);
+
+            QString folderInfo = QString("大小：%1B  文件数目：%2  文件夹数目：%3  创建时间：%4  修改时间：%5")
+                                     .arg(size)
+                                     .arg(file_number)
+                                     .arg(folder_number)
+                                     .arg(QString::fromLocal8Bit(create_time.c_str()))
+                                     .arg(QString::fromLocal8Bit(change_time.c_str()));
+            painter->drawText(textRect, Qt::AlignVCenter, folderInfo);
+        }
         painter->restore();
     }
 };
@@ -733,7 +784,7 @@ private:
         treeView->resizeColumnToContents(0);
 
         // 使用自定义ItemDelegate来美化视图的显示
-        CustomItemDelegate *itemDelegate = new CustomItemDelegate(treeView);
+        CustomItemDelegate *itemDelegate = new CustomItemDelegate(root, treeView);
         treeView->setItemDelegate(itemDelegate);
 
         // 为树形视图添加上下文菜单
@@ -972,9 +1023,6 @@ private:
         // fileInfo->setData(data);
 
         ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
-
-
-
 
         // exeProc.execute_write(file, &exeProc);
 
