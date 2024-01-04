@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 20:26:41
+ * @LastEditTime : 2024-01-04 23:50:11
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -74,6 +74,8 @@ void DiskBlock::set_content(char *content)
         return;
     }
 
+    // 检查content大小，如果小于磁盘块大小，就用空字符填充
+    size_t length = strlen(content);
     // 强行将content的末尾置为'\0'
     content[size - 1] = '\0';
 

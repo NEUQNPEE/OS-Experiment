@@ -29,6 +29,15 @@ string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
+// 记录内存块调度状况
+void recordProcess_memory()
+{
+    for (int i = 0; i < 64; i++)
+    {
+        process_memory_record[i] = memory_block[i].process_id;
+    }
+}
+
 // 序列化文件ID和起始盘块号的映射
 string encodeMap()
 {
@@ -78,7 +87,6 @@ void WriteDirectoryInfo(char *info)
     strcpy(ch, ans.c_str());
     disk.save_dir_info(ch);
 }
-
 // 读取目录信息和序列化后的ID和起始盘块号映射
 char *ReadDirectoryInfo()
 {
@@ -157,18 +165,25 @@ vector<int> initialBlock_ids(int write_process_id)
             if (memory_block[j].process_id < 0)
             {
                 block_ids[i] = memory_block[j].block_id;
+                memory_block[block_ids[i]].process_id = write_process_id;
                 break;
             }
         }
     }
-    // 八个内存块记录当前进程的ID
-    for (int i = 0; i < 8; i++)
-    {
-        memory_block[block_ids[i]].process_id = write_process_id;
-    }
+    // // 八个内存块记录当前进程的ID
+    // for (int i = 0; i < 8; i++)
+    // {
+    //     memory_block[block_ids[i]].process_id = write_process_id;
+    // }
 
     for (int j = 0; j < 8; j++)
+    {
+        int i = block_ids[j];
         temp.push_back(block_ids[j]);
+    }
+
+    recordProcess_memory();
+        
     return temp;
 }
 
@@ -199,18 +214,13 @@ void clearBlock_ids(int clear_process_id)
 
     // 顺带把暂存页内容的page_content清空
     fill(page_content, page_content + 1024, "");
+
+    recordProcess_memory();
     // 顺带把当前进程调度内存块的状况清空
     // clock_record.clear();
 }
 
-// 记录内存块调度状况
-void recordProcess_memory()
-{
-    for (int i = 0; i < 64; i++)
-    {
-        process_memory_record[i] = memory_block[i].process_id;
-    }
-}
+
 
 // 将文件页的内容填充到内存中。
 void fillMemory(int page_id, int block_id)

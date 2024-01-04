@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 22:59:09
+ * @LastEditTime : 2024-01-05 00:39:38
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -534,7 +534,6 @@ public:
         // 读取文件内容
         readFileContent(fileInfo);
 
-        
     }
 
     bool eventFilter(QObject *obj, QEvent *event) override
@@ -555,7 +554,9 @@ public:
     {
         // 先把文本编辑器的内容写入File
         string data = textEdit->toPlainText().toStdString();
-        file->set_Content(data);
+        // file->set_Content(data);
+        string *newData = new string(data);
+        fileInfo->setData(newData);
 
         // 挂载execute_write函数
 
@@ -585,6 +586,7 @@ public:
         textEdit->setText(QString::fromLocal8Bit(data));
     }
 };
+
 
 class CustomItemDelegate : public QStyledItemDelegate
 {
@@ -902,7 +904,7 @@ private:
             connect(newFileAction, &QAction::triggered, this, [=]() {
                 // 解析QFolderItem为文件夹子类
                 QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
-                Folder *thisFolder = folderItem->thisFolder;
+                Folder *thisFolder = folderItem->folder;
                 // 先弹出一个对话框，让用户输入文件名
                 QString fileName = QInputDialog::getText(myComputerWindow, "新建文件", "请输入文件名");
                 // 如果用户点击取消，直接返回
@@ -1046,7 +1048,7 @@ private:
 
         // fileInfo->setData(data);
 
-        ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
+        // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
 
         // exeProc.execute_write(file, &exeProc);
 

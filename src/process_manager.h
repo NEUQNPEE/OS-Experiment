@@ -149,6 +149,9 @@ public:
 
     Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
+    // 默认构造方法
+    Process() = default;
+
     // 重载小于运算符，用于比较 Process 对象的优先级
     bool operator<(const Process &other) const;
 
@@ -245,6 +248,9 @@ public:
     // 构造方法
     ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
+    // 默认构造方法
+    ExecutionProcess() = default;
+    
     static void sendData(const std::string &pipeName, const std::string &data);
 
     static std::string receiveData(const std::string &pipeName);
@@ -292,6 +298,8 @@ public:
     void joinThreads();
 
     void schedule();
+
+    void end();
 
 private:
     TaskScheduler() = default;

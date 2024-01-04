@@ -115,6 +115,8 @@ void DataGenerationProcess::
 create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
     auto *dataGenerationProcess = new DataGenerationProcess(name, pid, priority, ProcessState::READY,
                                                             ProcessType::DATA_GENERATION_PROCESS);
+
+    dataGenerationProcess->fileInfo = new FileInfo();
     dataGenerationProcess->fileInfo->fileName = fileInfo->fileName;
     dataGenerationProcess->fileInfo->folder = fileInfo->folder;
     dataGenerationProcess->fileInfo->file = fileInfo->file;
@@ -173,6 +175,8 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
     }
     auto *dataDeletionProcess = new DataDeletionProcess(name, pid, priority, ProcessState::READY,
                                                         ProcessType::DATA_DELETION_PROCESS);
+
+    dataDeletionProcess->fileInfo = new FileInfo();                              
     dataDeletionProcess->fileInfo->fileName = fileInfo->fileName;
     dataDeletionProcess->fileInfo->folder = fileInfo->folder;
     dataDeletionProcess->fileInfo->file = fileInfo->file;
@@ -357,6 +361,13 @@ void TaskScheduler::schedule() {
     // 从就绪队列中删除该进程
     processManager.readyQueue.pop();
     // 销毁进程
+    process->destroy();
+}
+
+void TaskScheduler::end()
+{
+    Process *process = processManager.readyQueue.top();
+    processManager.readyQueue.pop();
     process->destroy();
 }
 
