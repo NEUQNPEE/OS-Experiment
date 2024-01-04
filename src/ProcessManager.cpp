@@ -19,7 +19,8 @@ NamedPipe::~NamedPipe() {
 
 // 写数据到命名管道
 void NamedPipe::writeData(const std::string &data) const {
-    write(fileDescriptor, data.c_str(), data.size());
+    int a = write(fileDescriptor, data.c_str(), data.size());
+    std::cout << a << std::endl;
 }
 
 // 从命名管道读取数据
@@ -27,6 +28,7 @@ std::string NamedPipe::readData() const {
     const int bufferSize = 1024;
     char buffer[bufferSize];
     ssize_t bytesRead = read(fileDescriptor, buffer, bufferSize - 1);
+    std::cout << bytesRead << std::endl;
     if (bytesRead > 0) {
         buffer[bytesRead] = '\0'; // 添加字符串结束符
         return std::string(buffer);
@@ -48,8 +50,7 @@ bool Process::operator<(const Process &other) const {
     return priority < other.priority;
 }
 
-string Process::getProcessStateStr() const
-{
+string Process::getProcessStateStr() const {
     switch (state) {
         case ProcessState::RUNNING:
             return "运行";
@@ -100,9 +101,8 @@ void InitProcess::destroy() {
     // 销毁对象
     delete this;
 }
- 
-Folder *InitProcess::get_folder()
-{
+
+Folder *InitProcess::get_folder() {
     return folder;
 }
 
@@ -205,15 +205,6 @@ void DataDeletionProcess::destroy() {
 ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
         : Process(name, pid, priority, state, type) {}
 
-void ExecutionProcess::send_data_to_pipe(const std::string &data, const std::string &pipeName) {
-    NamedPipe pipe(pipeName);
-    pipe.writeData(data);
-}
-
-std::string ExecutionProcess::receive_data_from_pipe(const std::string &pipeName) {
-    NamedPipe pipe(pipeName);
-    return pipe.readData();
-}
 
 void ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
     auto *executionProcess = new ExecutionProcess(name, pid, priority, ProcessState::READY,
@@ -223,7 +214,7 @@ void ExecutionProcess::create(string name, int pid, int priority, FileInfo *file
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(executionProcess);
     // 申请内存
-    if(initialBlock_ids(executionProcess->pid)[0]==-1){
+    if (initialBlock_ids(executionProcess->pid)[0] == -1) {
         //todo 在这里向QT发送内存已满信息
 
         //加入阻塞队列
@@ -239,9 +230,9 @@ void ExecutionProcess::execute() {
 }
 
 void ExecutionProcess::destroy() {
-     clearBlock_ids(this->pid);
+    clearBlock_ids(this->pid);
     processManager.deleteProcess(this->pid);
-    if(!processManager.blockQueue.empty()){
+    if (!processManager.blockQueue.empty()) {
         processManager.readyQueue.push(processManager.blockQueue.front());
         processManager.blockQueue.front()->state = ProcessState::READY;
         processManager.blockQueue.pop();
@@ -273,6 +264,20 @@ void ExecutionProcess::execute_user_input_command(File *file, ExecutionProcess *
                 break;
         }
     }
+}
+
+void ExecutionProcess::sendData(const string &pipeName, const string &data) {
+    NamedPipe(pipeName).writeData(data);
+}
+
+std::string ExecutionProcess::receiveData(const string &pipeName) {
+    return NamedPipe(pipeName).readData();
+}
+
+void ExecutionProcess::renew(const std::string& pipeName) {
+    //将data更新为从管道获取的内容
+    std::string newData=receiveData(pipeName);
+    this->fileInfo.data=&newData;
 }
 
 
