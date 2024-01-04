@@ -151,6 +151,8 @@ public:
     std::vector<Process *> processList;
     std::priority_queue<Process *> readyQueue;
     std::queue<Process *> blockQueue;
+    // 新建一个用于传递命令的消息队列，0为退出，1为写数据
+    std::queue<int> commandQueue;
 
     // 从进程列表中删除该进程
     void deleteProcess(int pid);
@@ -199,7 +201,7 @@ public:
     // 构造方法
     DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
-    static void create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    static bool create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
 
     void execute() override;
 
@@ -212,10 +214,8 @@ public:
 enum class UserInputCommand {
     // 退出
     EXIT = 0,
-    // 读取数据
-    READ_DATA = 1,
     // 写入数据
-    WRITE_DATA = 2,
+    WRITE_DATA = 1,
 };
 
 /**
@@ -238,7 +238,9 @@ public:
 
     void destroy() override;
 
-    static void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
+    static void execute_read(File *file, ExecutionProcess *executionProcess);
+
+    void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
 };
 
 /**
