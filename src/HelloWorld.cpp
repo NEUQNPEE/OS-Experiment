@@ -2,6 +2,36 @@
 
 TaskScheduler& scheduler = TaskScheduler::getInstance();
 
+// 目录结点类型枚举类
+enum class FolderType
+{
+    // 文件夹
+    FOLDER,
+    // 文件
+    FILE
+};
+
+// 目录结点类，继承自QStandardItem
+class QFolderItem : public QStandardItem
+{
+public:
+    // 有参构造函数，参数为结点名称和结点类型
+    QFolderItem(QString name, FolderType type) : QStandardItem(name)
+    {
+        this->type = type;
+    }
+
+    // 获取结点类型
+    FolderType getType()
+    {
+        return type;
+    }
+
+private:
+    // 结点类型
+    FolderType type;
+};
+
 class MemoryWidget : public QWidget
 {
 public:
@@ -493,11 +523,9 @@ public:
         installEventFilter(this);
     }
 
+    // 生成根节点
     void parseFolderInfo(Folder *root)
     {
-        // 清空model
-        model->clear();
-
         string name = root->get_Name();
         string type = root->get_Type();
 
@@ -509,11 +537,16 @@ public:
         string change_time = root->get_Change_time();
 
         // 生成一个新的根节点
-        QStandardItem *rootItem = new QStandardItem(QString::fromLocal8Bit(name));
+        QFolderItem *rootItem = new QFolderItem(QString::fromLocal8Bit(name), FolderType::FOLDER);
         model->appendRow(rootItem);
 
+        inlineParseFolderInfo(root,rootItem);
+    }
+        
+    void inlineParseFolderInfo(Folder *nowFolder,QStandardItem *rootItem)
+    {
         // 遍历子文件对象
-        vector<File *> file_child = root->get_File_child();
+        vector<File *> file_child = nowFolder->get_File_child();
         for (int i = 0; i < file_child.size(); i++)
         {
             string name = file_child[i]->get_Name();
@@ -522,16 +555,30 @@ public:
             string change_time = file_child[i]->get_Change_time();
 
             // 生成一个新的子文件节点
-            QStandardItem *fileItem = new QStandardItem(QString::fromLocal8Bit(name));
+            // QStandardItem *fileItem = new QStandardItem(QString::fromLocal8Bit(name));
+            QFolderItem *fileItem = new QFolderItem(QString::fromLocal8Bit(name), FolderType::FILE);
             rootItem->appendRow(fileItem);
         }
 
         // 递归遍历子文件夹对象，使用新的递归函数
-        vector<Folder *> folder_child = root->get_Folder_child();
+        vector<Folder *> folder_child = nowFolder->get_Folder_child();
         for (int i = 0; i < folder_child.size(); i++)
         {
-            parseFolderInfo(folder_child[i]);
+            // 生成一个新的子文件夹节点
+            // QStandardItem *folderItem = new QStandardItem(QString::fromLocal8Bit(folder_child[i]->get_Name()));
+            QFolderItem *folderItem = new QFolderItem(QString::fromLocal8Bit(folder_child[i]->get_Name()), FolderType::FOLDER);
+            rootItem->appendRow(folderItem);
+
+            // parseFolderInfo(folder_child[i]);
+            inlineParseFolderInfo(folder_child[i],folderItem);
         }
+    }
+
+    // 先清空，再解析的包装函数、
+    void parseFolderInfoWrapper(Folder *root)
+    {
+        model->clear();
+        parseFolderInfo(root);
     }
 
     // 设置root
@@ -570,7 +617,7 @@ private:
         treeView->setModel(model);
 
         // 根据根文件夹对象，解析目录信息
-        parseFolderInfo(root);
+        parseFolderInfoWrapper(root);
 
         // 设置树形视图的列宽自适应内容
         treeView->resizeColumnToContents(0);
@@ -583,6 +630,9 @@ private:
         treeView->setContextMenuPolicy(Qt::CustomContextMenu);
         connect(treeView, &QTreeView::customContextMenuRequested, this, [=](const QPoint &pos)
                 {
+
+        // QStandardItem *item = model->itemFromIndex(treeView->indexAt(pos));
+        QFolderItem *item = static_cast<QFolderItem *>(model->itemFromIndex(treeView->indexAt(pos)));
         QModelIndex index = treeView->indexAt(pos);
         if (index.isValid()) {
         QMenu menu;
@@ -590,7 +640,7 @@ private:
         QString name = index.data().toString();
 
         //右键点击的是文件
-        if (index.parent().isValid()) {
+        if (item->getType() == FolderType::FILE) {
 
             QAction *readFileAction = menu.addAction("读写文件");
             connect(readFileAction, &QAction::triggered, this, &MyComputerButton::readFile);
@@ -613,10 +663,20 @@ private:
                     return;
                 }
                 createNewFile(name.toStdString(),fileName.toStdString());
+
+                
             });
 
             QAction *newFolderAction = menu.addAction("新建文件夹");
-            connect(newFolderAction, &QAction::triggered, this, &MyComputerButton::createNewFolder);
+            connect(newFolderAction, &QAction::triggered, this, [=]() {
+                // 先弹出一个对话框，让用户输入文件夹名
+                QString folderName = QInputDialog::getText(myComputerWindow, "新建文件夹", "请输入文件夹名");
+                // 如果用户点击取消，直接返回
+                if (folderName.isEmpty()) {
+                    return;
+                }
+                createNewFolder(name.toStdString(),folderName.toStdString());
+            });
 
             QAction *deleteFolderAction = menu.addAction("删除文件夹");
             connect(deleteFolderAction, &QAction::triggered, this, &MyComputerButton::deleteFolder);
@@ -624,6 +684,7 @@ private:
             QAction *renameFolderAction = menu.addAction("重命名文件夹");
             connect(renameFolderAction, &QAction::triggered, this, &MyComputerButton::renameFolder);
         }
+        
         menu.exec(treeView->mapToGlobal(pos));
     } });
 
@@ -639,24 +700,32 @@ private:
         // 遍历root，找到folderName对应的文件夹
         Folder *target_folder = findFolder(root, folderName);
 
-        // 在文件夹中添加文件
-        target_folder->Add_file(file);
-
-        parseFolderInfo(root);
-
         string *fileNamePtr = new string(fileName);
         FileInfo *fileInfo = new FileInfo(findFolder(root, folderName), fileNamePtr);
 
-        DataGenerationProcess::create("数据生成进程", 1, 1, fileInfo, OperationCommand::CREATE_FILE);
+        DataGenerationProcess::create("文件生成进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_FILE);
 
-        // taskScheduler->schedule();
         scheduler.schedule();
+
+        parseFolderInfoWrapper(root);
     }
 
     // 新建文件夹
-    void createNewFolder()
+    void createNewFolder(string parentFolderName, string folderName)
     {
-        // todo
+        Folder *folder = new Folder(folderName);
+
+        // 遍历root，找到parentFolderName对应的文件夹
+        Folder *target_folder = findFolder(root, parentFolderName);
+
+        string *folderNamePtr = new string(folderName);
+        FileInfo *fileInfo = new FileInfo(findFolder(root, parentFolderName), folderNamePtr);
+
+        DataGenerationProcess::create("文件夹生成进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_FOLDER);
+
+        scheduler.schedule();
+
+        parseFolderInfoWrapper(root);
     }
 
     // 删除文件夹
@@ -1002,10 +1071,22 @@ void HelloWorld::showTaskManager()
     groupBlockLayout->addWidget(groupBlockWidget);
 
     std::vector<Process *> processList = get_process_list();
+    int processNumber = processList.size();
     for (int i = 0; i < processList.size(); ++i)
     {
         tableWidget->insertRow(i);
-        QString processName = QString::fromStdString(processList[i]->name);
+        Process *temp = processList[i];
+        if(temp == nullptr)
+        {
+            continue;
+        }
+        // 依次检查
+        string Tname = temp->name;
+        int Tpid = temp->pid;
+        string Tstate = temp->getProcessStateStr();
+
+
+        QString processName = QString::fromLocal8Bit(processList[i]->name);
         tableWidget->setItem(i, 0, new QTableWidgetItem(processName));
         tableWidget->setItem(i, 1, new QTableWidgetItem(QString::number(processList[i]->pid)));
         tableWidget->setItem(i, 2, new QTableWidgetItem(QString::fromLocal8Bit(processList[i]->getProcessStateStr())));

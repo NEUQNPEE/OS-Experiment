@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 03:51:52
+ * @LastEditTime : 2024-01-04 14:52:52
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -57,6 +57,23 @@ DiskBlock::DiskBlock(int size, int number)
 
 void DiskBlock::set_content(char *content)
 {
+    // 检查content是否合法
+    if (content == nullptr)
+    {
+        std::cout << "content为空" << std::endl;
+        return;
+    }
+
+    // 如果开头就是'\0'，说明没内容，直接写40个'\0'进去
+    if (content[0] == '\0')
+    {
+        for (int i = 0; i < size; i++)
+        {
+            this->content[i] = '\0';
+        }
+        return;
+    }
+
     // 检查磁盘块大小是否足够
     if (strlen(content) > size)
     {
@@ -258,7 +275,7 @@ void DiskManager::init_disk()
     int block_num = disk.get_file_area() - GROUP_BLOCK_SIZE;
 
     // 当前初始化的成组链块的块号
-    int now_block_num = GROUP_BLOCK_SIZE+124;
+    int now_block_num = GROUP_BLOCK_SIZE + 124;
     GroupBlock *temp_block = group_block_head;
     while (block_num > 0)
     {
@@ -293,10 +310,10 @@ void DiskManager::init_disk()
     // 给fat表分配盘块（默认的）
     fat_block_numbers = allocate_file_area_blocks(fat_size);
 
-    // 读取fat表
-    // load_fat();
-
     load_info_from_txt();
+
+    // 读取fat表
+    load_fat();
 
     // 读取超级块
     load_super_block();
@@ -336,8 +353,6 @@ int DiskManager::save_file(const char *file_content)
 
     // 返回文件起始盘块号
     return block_ids[0];
-
-    
 }
 
 void DiskManager::delete_file_info(int block_number)
@@ -549,8 +564,9 @@ void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
     {
         strncpy(temp_content, content, disk.get_block_size() - 1);
         temp_content[disk.get_block_size() - 1] = '\0';
+        int t = block_numbers[i];
         write_block(block_numbers[i], temp_content);
-        block_numbers.pop_back();
+        // block_numbers.pop_back();
         if (strlen(content) > disk.get_block_size() - 1)
         {
             content += disk.get_block_size() - 1;
@@ -569,7 +585,8 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
     char *content = new char[disk.get_block_size() * block_numbers.size()];
     for (int i = 0; i < block_numbers.size(); i++)
     {
-        strncpy(content + i * disk.get_block_size(), read_block(block_numbers[i]), disk.get_block_size() - 1);
+        int t = block_numbers[i];
+        strncpy(content + i * (disk.get_block_size()-1), read_block(block_numbers[i]), disk.get_block_size() - 1);
     }
     return content;
 }
@@ -608,8 +625,13 @@ void DiskManager::save_dir_info(const char *dir_info)
         // 释放块
         free_blocks(block_numbers);
 
+        delete_fat(dir_info_block_number);
+
         int begin_block_number = save_file(dir_info);
         dir_info_block_number = begin_block_number;
+
+        // 存入fat表
+        save_fat();
 
         // 更新超级块
         update_super_block();
@@ -655,6 +677,9 @@ void DiskManager::save_fat()
     // 将fat表写入磁盘
     write_blocks(fat_block_numbers, fat_content);
 
+    // 持久化
+    save_info_in_txt();
+
     // 释放内存
     delete[] fat_content;
 }
@@ -686,6 +711,12 @@ void DiskManager::load_fat()
 
         // 读取key
         int key = 0;
+        // 跳过{
+        while (fat_content[i] == '{')
+        {
+            i++;
+        }
+
         while (fat_content[i] != ' ')
         {
             key = key * 10 + fat_content[i] - '0';
@@ -700,13 +731,27 @@ void DiskManager::load_fat()
 
         // 读取value
         int value = 0;
-        while (fat_content[i] != '}')
+        // 如果是负数
+        if (fat_content[i] == '-')
         {
-            value = value * 10 + fat_content[i] - '0';
             i++;
+            while (fat_content[i] != '}')
+            {
+                value = value * 10 + fat_content[i] - '0';
+                i++;
+            }
+            value = -value;
+        }
+        else
+        {
+            // 跳过}
+            while (fat_content[i] != '}')
+            {
+                value = value * 10 + fat_content[i] - '0';
+                i++;
+            }
         }
 
-        // 跳过}
         i++;
 
         // 将key-value对插入fat表
@@ -776,8 +821,13 @@ void DiskManager::load_super_block()
     // 更新目录信息起始盘块号
     this->dir_info_block_number = number;
 
-    // 为超级块和目录信息起始盘块各分配一个盘块
-    allocate_file_area_blocks(2);
+    // 为超级块分配一个盘块
+    allocate_file_area_blocks(1);
+
+    // 根据目录信息起始盘块号读fat表，确认分配数量
+    std::vector<int> dir_use_blocks = read_fat(dir_info_block_number);
+    int dir_use_blocks_num = dir_use_blocks.size();
+    allocate_file_area_blocks(dir_use_blocks_num);
 }
 
 // 更新超级块
@@ -817,24 +867,41 @@ void DiskManager::load_info_from_txt()
         std::cout << "打开文件失败" << std::endl;
         return;
     }
-    char *temp_content = new char[disk.get_block_size()+1];
+    char *temp_content = new char[disk.get_block_size() + 1];
 
     // 注意模拟内容的格式，每40个字符后面跟一个换行符，共计1024行
     // 读入时每次读入41个字符，将第40个字符替换为'\0'（每个磁盘块最后一个字符为'\0'）
     // 读取文件内容，先读兑换区
     for (int i = 0; i < disk.get_exchange_area(); i++)
     {
-        disk_info_file.read(temp_content, disk.get_block_size()+1);
+        disk_info_file.read(temp_content, disk.get_block_size() + 1);
         temp_content[disk.get_block_size()] = '\0';
         disk.get_block(i)->set_content(temp_content);
     }
     // 再读文件区
     for (int i = 0; i < disk.get_file_area(); i++)
     {
-        disk_info_file.read(temp_content, disk.get_block_size()+1);
+        disk_info_file.read(temp_content, disk.get_block_size() + 1);
         temp_content[disk.get_block_size()] = '\0';
         disk.get_block(i + disk.get_exchange_area())->set_content(temp_content);
     }
+}
+
+std::vector<int> DiskManager::read_fat(int block_number)
+{
+    std::vector<int> block_numbers;
+    block_numbers.push_back(block_number);
+    auto at = file_allocation_table.find(dir_info_block_number);
+    if (at != file_allocation_table.end())
+    {
+        int next_block_number = file_allocation_table[dir_info_block_number];
+        while (next_block_number != -1)
+        {
+            block_numbers.push_back(next_block_number);
+            next_block_number = file_allocation_table[next_block_number];
+        }
+    }
+    return block_numbers;
 }
 
 std::vector<bool> DiskManager::get_disk_block_status()

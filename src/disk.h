@@ -298,6 +298,9 @@ public:
     // 模拟用加载
     void load_info_from_txt();
 
+    // 根据起始盘块号读取fat表，返回盘块号数组
+    std::vector<int> read_fat(int block_number);
+
     // qt所需的磁盘块占用情况，返回1024大小的bool数组（std标准数组）
     std::vector<bool> get_disk_block_status();
 

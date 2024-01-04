@@ -15,7 +15,7 @@ std::string gettime()
     if (localtime_s(&localTime, &currentTime) == 0)
     {
         // 将时间信息拼接成字符串
-        str = str + std::to_string(localTime.tm_year + 1900) + ":" + std::to_string(localTime.tm_mon + 1) + ":" + std::to_string(localTime.tm_mday) + ":" + std::to_string(localTime.tm_hour) + ":" + std::to_string(localTime.tm_min) + ":" + std::to_string(localTime.tm_sec) + ":";
+        str = str + std::to_string(localTime.tm_year + 1900) + ":" + std::to_string(localTime.tm_mon + 1) + ":" + std::to_string(localTime.tm_mday) + ":" + std::to_string(localTime.tm_hour) + ":" + std::to_string(localTime.tm_min) + ":" + std::to_string(localTime.tm_sec);
     }
     else
     {
@@ -738,10 +738,8 @@ void tree_dir_diser_gen(std::queue<int> type, std::queue<int> child_num, std::qu
 // 树形目录反序列化
 void tree_dir_diser(std::string str)
 {
-    if(1){
-        return;
-    }
     std::vector<std::string> ser_inform;
+    int n = str.size();
     for (int i = 0; i < str.size();)
     {
         for (int j = i; j < str.size(); j++)

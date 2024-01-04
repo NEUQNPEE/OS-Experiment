@@ -38,7 +38,9 @@ void WriteDirectoryInfo(char *info)
 char *ReadDirectoryInfo()
 {
     int block_number = disk.get_dir_info_block_number();
-    return disk.read_block(block_number);
+    // return disk.read_block(block_number);
+    std::vector<int> block_numbers = disk.read_fat(block_number);
+    return disk.read_blocks(block_numbers);
 }
 
 // 初始化内存块
