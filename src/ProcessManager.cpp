@@ -115,9 +115,9 @@ void DataGenerationProcess::
 create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
     auto *dataGenerationProcess = new DataGenerationProcess(name, pid, priority, ProcessState::READY,
                                                             ProcessType::DATA_GENERATION_PROCESS);
-    dataGenerationProcess->fileInfo.fileName = fileInfo->fileName;
-    dataGenerationProcess->fileInfo.folder = fileInfo->folder;
-    dataGenerationProcess->fileInfo.file = fileInfo->file;
+    dataGenerationProcess->fileInfo->fileName = fileInfo->fileName;
+    dataGenerationProcess->fileInfo->folder = fileInfo->folder;
+    dataGenerationProcess->fileInfo->file = fileInfo->file;
     dataGenerationProcess->command = command;
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(dataGenerationProcess);
@@ -127,27 +127,27 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
 void DataGenerationProcess::execute() {
     switch (command) {
         case OperationCommand::CREATE_FOLDER: {
-            folder_add_folder(fileInfo.folder, *fileInfo.fileName);
+            folder_add_folder(fileInfo->folder, *fileInfo->fileName);
             break;
         }
         case OperationCommand::CREATE_FILE: {
-            folder_add_file(fileInfo.folder, *fileInfo.fileName);
+            folder_add_file(fileInfo->folder, *fileInfo->fileName);
             break;
         }
         case OperationCommand::RENAME_FOLDER: {
-            if (folder_is_repeat(fileInfo.folder, *fileInfo.fileName)) {
+            if (folder_is_repeat(fileInfo->folder, *fileInfo->fileName)) {
                 //todo 在这里向QT发送重名信息
                 return;
             }
-            folder_change_name(fileInfo.folder, *fileInfo.fileName);
+            folder_change_name(fileInfo->folder, *fileInfo->fileName);
             break;
         }
         case OperationCommand::RENAME_FILE: {
-            if (file_is_repeat(fileInfo.folder, *fileInfo.fileName)) {
+            if (file_is_repeat(fileInfo->folder, *fileInfo->fileName)) {
                 //todo 在这里向QT发送重名信息
                 return;
             }
-            file_change_name(fileInfo.file, *fileInfo.fileName);
+            file_change_name(fileInfo->file, *fileInfo->fileName);
             break;
         }
         default:
@@ -173,9 +173,9 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
     }
     auto *dataDeletionProcess = new DataDeletionProcess(name, pid, priority, ProcessState::READY,
                                                         ProcessType::DATA_DELETION_PROCESS);
-    dataDeletionProcess->fileInfo.fileName = fileInfo->fileName;
-    dataDeletionProcess->fileInfo.folder = fileInfo->folder;
-    dataDeletionProcess->fileInfo.file = fileInfo->file;
+    dataDeletionProcess->fileInfo->fileName = fileInfo->fileName;
+    dataDeletionProcess->fileInfo->folder = fileInfo->folder;
+    dataDeletionProcess->fileInfo->file = fileInfo->file;
     dataDeletionProcess->command = command;
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(dataDeletionProcess);
@@ -186,11 +186,11 @@ create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand 
 void DataDeletionProcess::execute() {
     switch (command) {
         case OperationCommand::DELETE_FOLDER: {
-            delete_folder(fileInfo.folder);
+            delete_folder(fileInfo->folder);
             break;
         }
         case OperationCommand::DELETE_FILE: {
-            delete_file(fileInfo.file);
+            delete_file(fileInfo->file);
             break;
         }
         default:
@@ -210,10 +210,10 @@ ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessS
         : Process(name, pid, priority, state, type) {}
 
 
-void ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
+ExecutionProcess ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
     auto *executionProcess = new ExecutionProcess(name, pid, priority, ProcessState::READY,
                                                   ProcessType::EXECUTION_PROCESS);
-    executionProcess->fileInfo.file = fileInfo->file;
+    executionProcess->fileInfo = fileInfo;
     executionProcess->command = command;
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(executionProcess);
@@ -224,20 +224,22 @@ void ExecutionProcess::create(string name, int pid, int priority, FileInfo *file
         //加入阻塞队列
         processManager.blockQueue.push(executionProcess);
         executionProcess->state = ProcessState::BLOCKED;
-        return;
+        return *executionProcess;
     }
     processManager.readyQueue.push(executionProcess);
+
+    return *executionProcess;
 }
 
 void ExecutionProcess::execute() {
-    this->state = ProcessState::RUNNING;
-    execute_read(fileInfo.file, this);
-    execute_user_input_command(fileInfo.file, this);
+    // this->state = ProcessState::RUNNING;
+    // execute_read(fileInfo.file, this);
+    // execute_user_input_command(fileInfo.file, this);
 }
 
 void ExecutionProcess::destroy() {
     // 从用户文件表中删除对应的进程占用
-    close_file(fileInfo.file, this->pid);
+    close_file(fileInfo->file, this->pid);
     clearBlock_ids(this->pid);
     processManager.deleteProcess(this->pid);
     // 将阻塞队列中的进程放入就绪队列
@@ -251,40 +253,59 @@ void ExecutionProcess::destroy() {
 
 void ExecutionProcess::execute_read(File *file, ExecutionProcess *executionProcess){
     std::string read_data = look_file_content(file, executionProcess->pid);
-    executionProcess->fileInfo.data=&read_data;
+    executionProcess->fileInfo->data=&read_data;
 }
 
-// 模拟执行用户输入的命令,参数为内存块地址
-void ExecutionProcess::execute_user_input_command(File *file, ExecutionProcess *executionProcess) {
-    while (true) {
-        if(!processManager.commandQueue.empty()){
-            int command = processManager.commandQueue.front();
-            processManager.commandQueue.pop();
-            if (command == 0) {
-                // 退出
-                return;
-            } else if (command == 1) {
-                // 写入数据
-                file_change_content(file, *executionProcess->fileInfo.data, executionProcess->pid);
-                vector pids =look_open_file(file);
-                if(pids.size()>1){
-                    ExecutionProcess::sendData(to_string(this->pid), *executionProcess->fileInfo.data);
-                    for (int pid : pids) {
-                        if(pid!=this->pid){
-                            //从进程列表中找到该进程
-                            for (auto & j : processManager.processList) {
-                                if(j->pid==pid){
-                                    auto* executionProcess1=dynamic_cast<ExecutionProcess*>(j);
-                                    executionProcess1->renew(to_string(this->pid));
-                                }
-                            }
-                        }
+void ExecutionProcess::execute_write(File *file, ExecutionProcess *executionProcess){
+    file_change_content(file, *executionProcess->fileInfo->data, executionProcess->pid);
+    vector pids =look_open_file(file);
+    if(pids.size()>1){
+        ExecutionProcess::sendData(to_string(executionProcess->pid), *executionProcess->fileInfo->data);
+        for (int pid : pids) {
+            if(pid!=executionProcess->pid){
+                //从进程列表中找到该进程
+                for (auto & j : processManager.processList) {
+                    if(j->pid==pid){
+                        auto* executionProcess1=dynamic_cast<ExecutionProcess*>(j);
+                        executionProcess1->renew(to_string(executionProcess->pid));
                     }
                 }
             }
         }
     }
 }
+
+// // 模拟执行用户输入的命令,参数为内存块地址
+// void ExecutionProcess::execute_user_input_command(File *file, ExecutionProcess *executionProcess) {
+//     while (true) {
+//         if(!processManager.commandQueue.empty()){
+//             int command = processManager.commandQueue.front();
+//             processManager.commandQueue.pop();
+//             if (command == 0) {
+//                 // 退出
+//                 return;
+//             } else if (command == 1) {
+//                 // 写入数据
+//                 file_change_content(file, *executionProcess->fileInfo.data, executionProcess->pid);
+//                 vector pids =look_open_file(file);
+//                 if(pids.size()>1){
+//                     ExecutionProcess::sendData(to_string(this->pid), *executionProcess->fileInfo.data);
+//                     for (int pid : pids) {
+//                         if(pid!=this->pid){
+//                             //从进程列表中找到该进程
+//                             for (auto & j : processManager.processList) {
+//                                 if(j->pid==pid){
+//                                     auto* executionProcess1=dynamic_cast<ExecutionProcess*>(j);
+//                                     executionProcess1->renew(to_string(this->pid));
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 void ExecutionProcess::sendData(const string &pipeName, const string &data) {
     NamedPipe(pipeName).writeData(data);
@@ -297,7 +318,7 @@ std::string ExecutionProcess::receiveData(const string &pipeName) {
 void ExecutionProcess::renew(const std::string& pipeName) {
     //将data更新为从管道获取的内容
     std::string newData=receiveData(pipeName);
-    this->fileInfo.data=&newData;
+    this->fileInfo->data=&newData;
 }
 
 

@@ -73,6 +73,15 @@ void initialMemory()
     dir_info = "";
 }
 
+// 记录内存块调度状况
+void recordProcess_memory()
+{
+    for (int i = 0; i < 64; i++)
+    {
+        process_memory_record[i] = memory_block[i].process_id;
+    }
+}
+
 // 为进程分配八个内存块
 vector<int> initialBlock_ids(int write_process_id)
 {
@@ -102,11 +111,17 @@ vector<int> initialBlock_ids(int write_process_id)
     // 八个内存块记录当前进程的ID
     for (int i = 0; i < 8; i++)
     {
+        int num = block_ids[i];
         memory_block[block_ids[i]].process_id = write_process_id;
     }
 
     for (int j = 0; j < 8; j++)
+    {
         temp.push_back(block_ids[j]);
+    }
+
+    recordProcess_memory();
+
     return temp;
 }
 
@@ -139,15 +154,6 @@ void clearBlock_ids(int clear_process_id)
     fill(page_content, page_content + 1024, "");
     // 顺带把当前进程调度内存块的状况清空
     // clock_record.clear();
-}
-
-// 记录内存块调度状况
-void recordProcess_memory()
-{
-    for (int i = 0; i < 64; i++)
-    {
-        process_memory_record[i] = memory_block[i].process_id;
-    }
 }
 
 // 将文件页的内容填充到内存中。
@@ -293,7 +299,7 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
     }
     // 更新目录信息
     disk.save_dir_info(write_dir_info);
-    //清空文件页内容暂存
+    // 清空文件页内容暂存
     fill(page_content, page_content + 1024, "NULL");
 }
 
@@ -359,8 +365,8 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
         recordProcess_memory();
-        //char *temp = ans + i * 40;
-        //temp = ReadMemoryBlock(write_block_id, 40);
+        // char *temp = ans + i * 40;
+        // temp = ReadMemoryBlock(write_block_id, 40);
     }
     // 查找是否有不足40B的尾巴
     int remainder = file_size % 40;
@@ -370,11 +376,11 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
         recordProcess_memory();
-        //char *temp = ans + page_count * 40;
-        //temp = ReadMemoryBlock(write_block_id, remainder);
+        // char *temp = ans + page_count * 40;
+        // temp = ReadMemoryBlock(write_block_id, remainder);
     }
 
-    //清空文件页内容暂存
+    // 清空文件页内容暂存
     fill(page_content, page_content + 1024, "NULL");
     // return ans;
     return file_content;

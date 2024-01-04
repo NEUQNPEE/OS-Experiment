@@ -73,18 +73,26 @@ struct FileInfo {
 
     // 构造方法1:创建新文件，需要folder和fileName
     FileInfo(Folder *folder, string *fileName) {
+        this->file = nullptr;
         this->folder = folder;
         this->fileName = fileName;
+        this->data = new string("");
     }
 
     // 构造方法2:删除文件夹，只要一个folder
     explicit FileInfo(Folder *folder) {
+        this->file = nullptr;
         this->folder = folder;
+        this->fileName = new string("");
+        this->data = new string("");
     }
 
     // 构造方法3:删除文件，只要一个file
     explicit FileInfo(File *file) {
         this->file = file;
+        this->folder = nullptr;
+        this->fileName = new string("");
+        this->data = new string("");
     }
 
     // 构造方法4:重命名文件，需要folder、file和fileName
@@ -92,11 +100,12 @@ struct FileInfo {
         this->folder = folder;
         this->file = file;
         this->fileName = fileName;
+        this->data = new string("");
     }
 
     // get方法
-    string *getData() {
-        return this->data;
+    string getData() {
+        return *this->data;
     }
 
     // set方法
@@ -135,7 +144,7 @@ public:
     ProcessState state;          // 进程状态
     ProcessType type;            // 进程类型
     vector<int> allocatedMemory; // 内存块地址
-    FileInfo fileInfo{};         // 文件信息
+    FileInfo *fileInfo{};         // 文件信息
     OperationCommand command;    // 操作命令
 
     Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -162,7 +171,7 @@ public:
     std::priority_queue<Process *> readyQueue;
     std::queue<Process *> blockQueue;
     // 新建一个用于传递命令的消息队列，0为退出，1为写数据
-    std::queue<int> commandQueue;
+    // std::queue<int> commandQueue;
 
     // 从进程列表中删除该进程
     void deleteProcess(int pid);
@@ -242,15 +251,16 @@ public:
 
     void renew(const std::string& pipeName);
 
-    static void create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    static ExecutionProcess create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
 
     void execute() override;
 
     void destroy() override;
 
     static void execute_read(File *file, ExecutionProcess *executionProcess);
+    static void execute_write(File *file, ExecutionProcess *executionProcess);
 
-    void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
+    // void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
 };
 
 /**

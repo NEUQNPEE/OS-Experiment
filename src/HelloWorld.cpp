@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 19:11:01
+ * @LastEditTime : 2024-01-04 22:12:33
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -500,38 +500,67 @@ private:
     }
 };
 
-// // 文本文件窗口，继承自QMainWindow
-// class TextFileWindow : public QMainWindow
-// {
-// private:
-//     File *file;
-//     FileInfo *fileInfo;
+// 文本文件窗口，继承自QMainWindow
+class TextFileWindow : public QMainWindow
+{
+private:
+    File *file;
+    FileInfo *fileInfo;
 
-//     // 文本编辑器
-//     QTextEdit *textEdit;
+    // 文本编辑器
+    QTextEdit *textEdit;
 
-// public:
-//     // 有参构造函数
-//     TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
-//     {
-//         this->file = file;
-//         this->fileInfo = new FileInfo(file->get_Parent(), file->get_NamePtr());
+public:
+    // 有参构造函数
+    TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
+    {
+        this->file = file;
+        this->fileInfo = new FileInfo(file);
 
-//         setWindowTitle(QString::fromStdString(file->get_Name()));
-//         resize(800, 600);
+        setWindowTitle(QString::fromStdString(file->get_Name()));
+        resize(800, 600);
 
-//         textEdit = new QTextEdit(this);
-//         setCentralWidget(textEdit);
+        textEdit = new QTextEdit(this);
+        setCentralWidget(textEdit);
 
-//         // 为文本编辑器添加事件过滤器
-//         textEdit->installEventFilter(this);
+        // 为文本编辑器添加事件过滤器
+        textEdit->installEventFilter(this);
+    }
 
-//         // 读取文件内容
-//         textEdit->setText(QString::fromStdString(file->get_Content()));
-//     }
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_S && keyEvent->modifiers() == Qt::ControlModifier)
+            {
+                saveFileContent();
+                return true;
+            }
+        }
+        return false;
+    }
 
+    void saveFileContent()
+    {
+        // 向进程消息队列中添加一条消息
+    }
 
+    // 重写关闭事件，关闭窗口时保存文件内容
+    void closeEvent(QCloseEvent *event) override
+    {
+        saveFileContent();
+        event->accept();
+    }
 
+    // 读取文件内容
+    void readFileContent(FileInfo *fileInfo)
+    {
+        // 写进文本编辑器
+        string data = fileInfo->getData();
+        textEdit->setText(QString::fromLocal8Bit(data));
+    }
+};
 
 class CustomItemDelegate : public QStyledItemDelegate
 {
@@ -933,15 +962,31 @@ private:
     // 读写文件
     void readWriteFile(File *file)
     {
-        // QMainWindow *textWindow = new QMainWindow(this);
-        // textWindow->setWindowTitle(QString::fromLocal8Bit(file->get_Name()));
-        // textWindow->resize(800, 600);
+        TextFileWindow *textFileWindow = new TextFileWindow(this, file);
+        textFileWindow->show();
 
-        // CustomTextEdit *textEdit = new CustomTextEdit(textWindow);
-        // textWindow->setCentralWidget(textEdit);
+        FileInfo *fileInfo = new FileInfo(file);
 
-        // // 窗口显示
-        // textWindow->show();
+        // string *data = new string("你学塔菲！");
+
+        // fileInfo->setData(data);
+
+        ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
+
+
+
+
+        // exeProc.execute_write(file, &exeProc);
+
+        // // 窗口先关闭
+        // textFileWindow->close();
+
+        // exeProc.execute_read(file, &exeProc);
+
+        // textFileWindow->readFileContent(fileInfo);
+
+        // // 窗口再显示
+        // textFileWindow->show();
     }
 
     // 重命名文件
@@ -961,41 +1006,38 @@ private:
     {
         FileInfo *fileInfo = new FileInfo(file);
 
-        DataDeletionProcess::create("文件删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FILE);
+        if (!DataDeletionProcess::create("文件删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FILE))
+        {
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("删除文件");
+            msgBox.setText("有文件正在读取该文件，无法删除！");
+
+            msgBox.setStandardButtons(QMessageBox::Yes);
+            QPushButton *yesButton = qobject_cast<QPushButton *>(msgBox.button(QMessageBox::Yes));
+
+            QString buttonStyle = "QPushButton {"
+                                  "    border: 1px solid black;"
+                                  "    padding: 5px;"
+                                  "}";
+
+            yesButton->setStyleSheet(buttonStyle);
+
+            QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(msgBox.layout());
+            if (layout)
+            {
+                layout->setContentsMargins(20, 10, 20, 10);
+                layout->setSpacing(20);
+            }
+
+            msgBox.exec();
+
+            return;
+        };
 
         scheduler.schedule();
 
         parseFolderInfoWrapper(root);
     }
-
-    // // 递归遍历root，找到名为folderName的文件夹
-    // Folder *findFolder(Folder *nowFolder, string folderName)
-    // {
-    //     if (nowFolder->get_Name() == folderName)
-    //     {
-    //         return nowFolder;
-    //     }
-
-    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-    //     {
-    //         Folder *folder = nowFolder->get_Folder_child()[i];
-    //         if (folder != nullptr)
-    //         {
-    //             return folder;
-    //         }
-    //     }
-
-    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-    //     {
-    //         Folder *folder = findFolder(nowFolder->get_Folder_child()[i], folderName);
-    //         if (folder != nullptr)
-    //         {
-    //             return folder;
-    //         }
-    //     }
-
-    //     return nullptr;
-    // }
 };
 
 HelloWorld::HelloWorld(QWidget *parent)

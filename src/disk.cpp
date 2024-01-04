@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 19:51:46
+ * @LastEditTime : 2024-01-04 20:26:41
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -581,16 +581,19 @@ void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
         i++;
     }
 }
-
 // 从多个盘块读取内容
 char *DiskManager::read_blocks(std::vector<int> block_numbers)
 {
-    char *content = new char[disk.get_block_size() * block_numbers.size()];
+    int size = block_numbers.size();
+    int num =(disk.get_block_size()-1) * block_numbers.size() + 1;
+    char *content = new char[(disk.get_block_size()-1) * block_numbers.size() + 1];
     for (int i = 0; i < block_numbers.size(); i++)
     {
         int t = block_numbers[i];
         strncpy(content + i * (disk.get_block_size()-1), read_block(block_numbers[i]), disk.get_block_size() - 1);
     }
+    // 添加结束符
+    content[(disk.get_block_size()-1) * block_numbers.size()] = '\0';
     return content;
 }
 
