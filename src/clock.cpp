@@ -80,12 +80,17 @@ char *ReadDirectoryInfo()
     // 读取目录信息,并反序列化映射
     string info = disk.read_blocks(block_numbers);
     int map_begin = info.find("##");
-    if (map_begin != info.npos)// 映射可能为空
+    if (map_begin != info.npos) // 映射可能为空
     {
         dir_info = info.substr(0, map_begin).data();
-        decodeMap(info.substr(map_begin)); 
+        decodeMap(info.substr(map_begin));
     }
-    else dir_info = info.data();   
+    else
+    {
+        // 把string转为char*，不然会报错
+        dir_info = new char[info.length() + 1];
+        strcpy(dir_info, info.c_str());
+    }
 
     return dir_info;
 }
