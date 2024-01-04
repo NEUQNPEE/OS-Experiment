@@ -860,11 +860,19 @@ void delete_folder(Folder *folder)
 }
 
 // 删除文件
-void delete_file(File *file)
+bool delete_file(File *file)
 {
-    file->delete_File();
-    DeleteFile(file->get_ID());
-    WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+    if (file_open_num.find(file)->second == 0)
+    {
+        file->delete_File();
+        DeleteFile(file->get_ID());
+        WriteDirectoryInfo(gotoChar(tree_dir_ser()));
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 // 改文件夹名接口

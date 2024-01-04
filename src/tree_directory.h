@@ -183,7 +183,7 @@ Folder *folder_add_folder(Folder *folder, std::string str);
 void delete_folder(Folder *folder);
 
 // 删除文件
-void delete_file(File *file);
+bool delete_file(File *file);
 
 // 改文件夹名接口
 Folder *folder_change_name(Folder *folder, std::string name);
