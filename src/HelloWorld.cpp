@@ -1,6 +1,16 @@
+/*
+ * @Author       : NieFire planet_class@foxmail.com
+ * @Date         : 2024-01-03 20:15:46
+ * @LastEditors  : NieFire planet_class@foxmail.com
+ * @LastEditTime : 2024-01-04 17:14:43
+ * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
+ * @Description  :
+ * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
+ * Copyright (c) 2024 by NieFire, All Rights Reserved.
+ */
 #include "HelloWorld.h"
 
-TaskScheduler& scheduler = TaskScheduler::getInstance();
+TaskScheduler &scheduler = TaskScheduler::getInstance();
 
 // 目录结点类型枚举类
 enum class FolderType
@@ -16,9 +26,10 @@ class QFolderItem : public QStandardItem
 {
 public:
     // 有参构造函数，参数为结点名称和结点类型
-    QFolderItem(QString name, FolderType type) : QStandardItem(name)
+    QFolderItem(QString name, FolderType type, Folder *folder) : QStandardItem(name)
     {
         this->type = type;
+        this->folder = folder;
     }
 
     // 获取结点类型
@@ -27,9 +38,40 @@ public:
         return type;
     }
 
+    // Folder指针
+    Folder *folder;
+
 private:
     // 结点类型
     FolderType type;
+};
+
+// 文件子类，添加一个File指针
+class QFolderItemFileStyle : public QFolderItem
+{
+public:
+    // 有参构造函数，参数为结点名称和结点类型
+    QFolderItemFileStyle(QString name, FolderType type, Folder *folder, File *thisFile) : QFolderItem(name, type, folder)
+    {
+        this->thisFile = thisFile;
+    }
+
+    // File指针
+    File *thisFile;
+};
+
+// 文件夹子类，添加一个File指针
+class QFolderItemFolderStyle : public QFolderItem
+{
+public:
+    // 有参构造函数，参数为结点名称和结点类型
+    QFolderItemFolderStyle(QString name, FolderType type, Folder *folder, Folder *thisFolder) : QFolderItem(name, type, folder)
+    {
+        this->thisFolder = thisFolder;
+    }
+
+    // Folder指针
+    Folder *thisFolder;
 };
 
 class MemoryWidget : public QWidget
@@ -537,13 +579,13 @@ public:
         string change_time = root->get_Change_time();
 
         // 生成一个新的根节点
-        QFolderItem *rootItem = new QFolderItem(QString::fromLocal8Bit(name), FolderType::FOLDER);
+        QFolderItem *rootItem = new QFolderItem(QString::fromLocal8Bit(name), FolderType::FOLDER, root);
         model->appendRow(rootItem);
 
-        inlineParseFolderInfo(root,rootItem);
+        inlineParseFolderInfo(root, rootItem);
     }
-        
-    void inlineParseFolderInfo(Folder *nowFolder,QStandardItem *rootItem)
+
+    void inlineParseFolderInfo(Folder *nowFolder, QStandardItem *rootItem)
     {
         // 遍历子文件对象
         vector<File *> file_child = nowFolder->get_File_child();
@@ -556,7 +598,7 @@ public:
 
             // 生成一个新的子文件节点
             // QStandardItem *fileItem = new QStandardItem(QString::fromLocal8Bit(name));
-            QFolderItem *fileItem = new QFolderItem(QString::fromLocal8Bit(name), FolderType::FILE);
+            QFolderItem *fileItem = new QFolderItemFileStyle(QString::fromLocal8Bit(name), FolderType::FILE, nowFolder, file_child[i]);
             rootItem->appendRow(fileItem);
         }
 
@@ -566,11 +608,11 @@ public:
         {
             // 生成一个新的子文件夹节点
             // QStandardItem *folderItem = new QStandardItem(QString::fromLocal8Bit(folder_child[i]->get_Name()));
-            QFolderItem *folderItem = new QFolderItem(QString::fromLocal8Bit(folder_child[i]->get_Name()), FolderType::FOLDER);
+            QFolderItem *folderItem = new QFolderItemFolderStyle(QString::fromLocal8Bit(folder_child[i]->get_Name()), FolderType::FOLDER, nowFolder, folder_child[i]);
             rootItem->appendRow(folderItem);
 
             // parseFolderInfo(folder_child[i]);
-            inlineParseFolderInfo(folder_child[i],folderItem);
+            inlineParseFolderInfo(folder_child[i], folderItem);
         }
     }
 
@@ -616,6 +658,12 @@ private:
         model = new QStandardItemModel(treeView);
         treeView->setModel(model);
 
+        // 添加标识列的标题
+        model->setHorizontalHeaderLabels(QStringList() << "名称"
+                                                       << "大小"
+                                                       << "创建时间"
+                                                       << "修改时间");
+
         // 根据根文件夹对象，解析目录信息
         parseFolderInfoWrapper(root);
 
@@ -638,6 +686,7 @@ private:
         QMenu menu;
 
         QString name = index.data().toString();
+        Folder *folder = item->folder;
 
         //右键点击的是文件
         if (item->getType() == FolderType::FILE) {
@@ -646,10 +695,61 @@ private:
             connect(readFileAction, &QAction::triggered, this, &MyComputerButton::readFile);
 
             QAction *renameFileAction = menu.addAction("重命名文件");
-            connect(renameFileAction, &QAction::triggered, this, &MyComputerButton::renameFile);
+            connect(renameFileAction, &QAction::triggered, this, [=]() {
+                // 先弹出一个对话框，让用户输入文件名
+                QString fileName = QInputDialog::getText(myComputerWindow, "重命名文件", "请输入文件名");
+                // 如果用户点击取消，直接返回
+                if (fileName.isEmpty()) {
+                    return;
+                }
+
+                // 解析QFolderItem为文件子类
+                QFolderItemFileStyle *fileItem = static_cast<QFolderItemFileStyle *>(item);
+
+                renameFile(folder,fileItem->thisFile,fileName.toStdString());
+            
+            }); 
 
             QAction *deleteFileAction = menu.addAction("删除文件");
-            connect(deleteFileAction, &QAction::triggered, this, &MyComputerButton::deleteFile);
+            connect(deleteFileAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件子类
+                QFolderItemFileStyle *fileItem = static_cast<QFolderItemFileStyle *>(item);
+
+                // 先弹出一个对话框，让用户确定是否删除
+                QMessageBox msgBox(myComputerWindow);
+                msgBox.setWindowTitle("删除文件");
+                msgBox.setText("确定要删除文件吗？");
+
+                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                QPushButton* yesButton = qobject_cast<QPushButton*>(msgBox.button(QMessageBox::Yes));
+                QPushButton* noButton = qobject_cast<QPushButton*>(msgBox.button(QMessageBox::No));
+
+                QString buttonStyle = "QPushButton {"
+                                    "    border: 1px solid black;"
+                                    "    padding: 5px;"
+                                    "}";
+
+                yesButton->setStyleSheet(buttonStyle);
+                noButton->setStyleSheet(buttonStyle);
+
+                QVBoxLayout* layout = qobject_cast<QVBoxLayout*>(msgBox.layout());
+                if (layout)
+                {
+                    layout->setContentsMargins(20, 10, 20, 10);
+                    layout->setSpacing(20);
+                }
+
+                QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(msgBox.exec());
+            
+                if (reply == QMessageBox::Yes) 
+                {
+                    deleteFile(fileItem->thisFile);
+                }
+                else 
+                {
+                    return;
+                }
+            });
         }
 
         //右键点击的文件夹
@@ -662,7 +762,7 @@ private:
                 if (fileName.isEmpty()) {
                     return;
                 }
-                createNewFile(name.toStdString(),fileName.toStdString());
+                createNewFile(folder,fileName.toStdString());
 
                 
             });
@@ -675,11 +775,49 @@ private:
                 if (folderName.isEmpty()) {
                     return;
                 }
-                createNewFolder(name.toStdString(),folderName.toStdString());
+                createNewFolder(folder,folderName.toStdString());
             });
 
             QAction *deleteFolderAction = menu.addAction("删除文件夹");
-            connect(deleteFolderAction, &QAction::triggered, this, &MyComputerButton::deleteFolder);
+            connect(deleteFolderAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件夹子类
+                QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
+
+                // 先弹出一个对话框，让用户确定是否删除
+                QMessageBox msgBox(myComputerWindow);
+                msgBox.setWindowTitle("删除文件夹");
+                msgBox.setText("确定要删除文件夹吗？");
+
+                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                QPushButton* yesButton = qobject_cast<QPushButton*>(msgBox.button(QMessageBox::Yes));
+                QPushButton* noButton = qobject_cast<QPushButton*>(msgBox.button(QMessageBox::No));
+
+                QString buttonStyle = "QPushButton {"
+                                    "    border: 1px solid black;"
+                                    "    padding: 5px;"
+                                    "}";
+
+                yesButton->setStyleSheet(buttonStyle);
+                noButton->setStyleSheet(buttonStyle);
+
+                QVBoxLayout* layout = qobject_cast<QVBoxLayout*>(msgBox.layout());
+                if (layout)
+                {
+                    layout->setContentsMargins(20, 10, 20, 10);
+                    layout->setSpacing(20);
+                }
+
+                QMessageBox::StandardButton reply = static_cast<QMessageBox::StandardButton>(msgBox.exec());
+            
+                if (reply == QMessageBox::Yes) 
+                {
+                    deleteFolder(folderItem->thisFolder);
+                }
+                else 
+                {
+                    return;
+                }
+            });
 
             QAction *renameFolderAction = menu.addAction("重命名文件夹");
             connect(renameFolderAction, &QAction::triggered, this, &MyComputerButton::renameFolder);
@@ -694,14 +832,14 @@ private:
     }
 
     // 新建文件
-    void createNewFile(string folderName, string fileName)
+    void createNewFile(Folder *parentFolder, string fileName)
     {
         File *file = new File(fileName);
         // 遍历root，找到folderName对应的文件夹
-        Folder *target_folder = findFolder(root, folderName);
+        // Folder *target_folder = findFolder(root, folderName);
 
         string *fileNamePtr = new string(fileName);
-        FileInfo *fileInfo = new FileInfo(findFolder(root, folderName), fileNamePtr);
+        FileInfo *fileInfo = new FileInfo(parentFolder, fileNamePtr);
 
         DataGenerationProcess::create("文件生成进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_FILE);
 
@@ -711,15 +849,15 @@ private:
     }
 
     // 新建文件夹
-    void createNewFolder(string parentFolderName, string folderName)
+    void createNewFolder(Folder *parentFolder, string folderName)
     {
         Folder *folder = new Folder(folderName);
 
         // 遍历root，找到parentFolderName对应的文件夹
-        Folder *target_folder = findFolder(root, parentFolderName);
+        // Folder *target_folder = findFolder(root, parentFolderName);
 
         string *folderNamePtr = new string(folderName);
-        FileInfo *fileInfo = new FileInfo(findFolder(root, parentFolderName), folderNamePtr);
+        FileInfo *fileInfo = new FileInfo(parentFolder, folderNamePtr);
 
         DataGenerationProcess::create("文件夹生成进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_FOLDER);
 
@@ -729,9 +867,15 @@ private:
     }
 
     // 删除文件夹
-    void deleteFolder()
+    void deleteFolder(Folder *Folder)
     {
-        // todo
+        FileInfo *fileInfo = new FileInfo(Folder);
+
+        DataDeletionProcess::create("文件夹删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FOLDER);
+
+        scheduler.schedule();
+
+        parseFolderInfoWrapper(root);
     }
 
     // 重命名文件夹
@@ -747,43 +891,57 @@ private:
     }
 
     // 重命名文件
-    void renameFile()
+    void renameFile(Folder *parentFolder, File *file, string newFileName)
     {
-        // todo
+        FileInfo *fileInfo = new FileInfo(parentFolder, file, new string(newFileName));
+
+        DataGenerationProcess::create("文件重命名进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::RENAME_FILE);
+
+        scheduler.schedule();
+
+        parseFolderInfoWrapper(root);
     }
 
     // 删除文件
-    void deleteFile()
+    void deleteFile(File *file)
     {
-        // todo
+        FileInfo *fileInfo = new FileInfo(file);
+
+        DataDeletionProcess::create("文件删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FILE);
+
+        scheduler.schedule();
+
+        parseFolderInfoWrapper(root);
     }
 
-    // 递归遍历root，找到名为folderName的文件夹
-    Folder *findFolder(Folder *nowFolder, string folderName)
-    {
-        if (nowFolder->get_Name() == folderName)
-        {
-            return nowFolder;
-        }
+    // // 递归遍历root，找到名为folderName的文件夹
+    // Folder *findFolder(Folder *nowFolder, string folderName)
+    // {
+    //     if (nowFolder->get_Name() == folderName)
+    //     {
+    //         return nowFolder;
+    //     }
 
-        for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-        {
-            Folder *folder = nowFolder->get_Folder_child()[i];
-            if (folder != nullptr)
-            {
-                return folder;
-            }
-        }
+    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
+    //     {
+    //         Folder *folder = nowFolder->get_Folder_child()[i];
+    //         if (folder != nullptr)
+    //         {
+    //             return folder;
+    //         }
+    //     }
 
-        for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-        {
-            Folder *folder = findFolder(nowFolder->get_Folder_child()[i], folderName);
-            if (folder != nullptr)
-            {
-                return folder;
-            }
-        }
-    }
+    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
+    //     {
+    //         Folder *folder = findFolder(nowFolder->get_Folder_child()[i], folderName);
+    //         if (folder != nullptr)
+    //         {
+    //             return folder;
+    //         }
+    //     }
+
+    //     return nullptr;
+    // }
 };
 
 HelloWorld::HelloWorld(QWidget *parent)
@@ -1076,7 +1234,7 @@ void HelloWorld::showTaskManager()
     {
         tableWidget->insertRow(i);
         Process *temp = processList[i];
-        if(temp == nullptr)
+        if (temp == nullptr)
         {
             continue;
         }
@@ -1084,7 +1242,6 @@ void HelloWorld::showTaskManager()
         string Tname = temp->name;
         int Tpid = temp->pid;
         string Tstate = temp->getProcessStateStr();
-
 
         QString processName = QString::fromLocal8Bit(processList[i]->name);
         tableWidget->setItem(i, 0, new QTableWidgetItem(processName));

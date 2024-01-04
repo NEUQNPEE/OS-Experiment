@@ -81,6 +81,27 @@ struct FileInfo
         this->folder = folder;
         this->fileName = fileName;
     }
+
+    // 构造方法2:删除文件夹，只要一个folder
+    explicit FileInfo(Folder *folder)
+    {
+        this->folder = folder;
+    }
+
+    // 构造方法3:删除文件，只要一个file
+    explicit FileInfo(File *file)
+    {
+        this->file = file;
+    }
+
+    // 构造方法4:重命名文件，需要folder、file和fileName
+    FileInfo(Folder *folder, File *file, string *fileName)
+    {
+        this->folder = folder;
+        this->file = file;
+        this->fileName = fileName;
+    }
+
 };
 
 /**
