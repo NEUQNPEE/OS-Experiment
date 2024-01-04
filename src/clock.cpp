@@ -46,9 +46,15 @@ void decodeMap(string info)
 {
     // 暂存解析出的数字
     vector<int> temp;
+    // 如果是空映射
+    if (info.size() < 8)    //##1 2 ##
+        return;
     // 去掉起始和末尾的分隔符##
-    if (info.size() > 4)
-        info = info.substr(2, info.size() - 2);
+    int map_begin = info.find("##") + 2;
+    int map_end = info.rfind("##") - 1;
+    int len = map_end - map_begin + 1;
+    info = info.substr(map_begin, len);
+
     // 解析文件ID和起始盘块号的映射
     stringstream str(info);
     string number;
@@ -68,7 +74,9 @@ void WriteDirectoryInfo(char *info)
 {
     string ans = encodeMap();
     ans = info + ans;
-    disk.save_dir_info(ans.data());
+    char* ch = new char[ans.size() + 1];
+    strcpy(ch, ans.c_str());
+    disk.save_dir_info(ch);
 }
 
 // 读取目录信息和序列化后的ID和起始盘块号映射
@@ -82,7 +90,9 @@ char *ReadDirectoryInfo()
     int map_begin = info.find("##");
     if (map_begin != info.npos) // 映射可能为空
     {
-        dir_info = info.substr(0, map_begin).data();
+        string temp = info.substr(0, map_begin);
+        dir_info = new char[temp.length() + 1];
+        strcpy(dir_info, temp.c_str());
         decodeMap(info.substr(map_begin));
     }
     else
@@ -217,7 +227,8 @@ void fillMemory(int page_id, int block_id)
 // 调用disk.cpp的函数，将修改后的文件内容传进磁盘，返回文件的起始磁盘块号
 int SaveDiskFile(string block_content)
 {
-    char *content = block_content.data();
+    char *content = new char[block_content.size() + 1];
+    strcpy(content, block_content.c_str());
     int disk_block_id = disk.save_file(content);
     // 存储文件后磁盘会更新FAT表，所以更新fat_list
     fat_list = disk.get_fat_block_numbers();
