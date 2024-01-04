@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 17:14:43
+ * @LastEditTime : 2024-01-04 19:11:01
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -500,6 +500,39 @@ private:
     }
 };
 
+// // 文本文件窗口，继承自QMainWindow
+// class TextFileWindow : public QMainWindow
+// {
+// private:
+//     File *file;
+//     FileInfo *fileInfo;
+
+//     // 文本编辑器
+//     QTextEdit *textEdit;
+
+// public:
+//     // 有参构造函数
+//     TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
+//     {
+//         this->file = file;
+//         this->fileInfo = new FileInfo(file->get_Parent(), file->get_NamePtr());
+
+//         setWindowTitle(QString::fromStdString(file->get_Name()));
+//         resize(800, 600);
+
+//         textEdit = new QTextEdit(this);
+//         setCentralWidget(textEdit);
+
+//         // 为文本编辑器添加事件过滤器
+//         textEdit->installEventFilter(this);
+
+//         // 读取文件内容
+//         textEdit->setText(QString::fromStdString(file->get_Content()));
+//     }
+
+
+
+
 class CustomItemDelegate : public QStyledItemDelegate
 {
 public:
@@ -692,7 +725,14 @@ private:
         if (item->getType() == FolderType::FILE) {
 
             QAction *readFileAction = menu.addAction("读写文件");
-            connect(readFileAction, &QAction::triggered, this, &MyComputerButton::readFile);
+            connect(readFileAction, &QAction::triggered, this, [=]() {
+                // 解析为文件子类
+                QFolderItemFileStyle *fileItem = static_cast<QFolderItemFileStyle *>(item);
+                File *file = fileItem->thisFile;
+
+                readWriteFile(file);
+
+            });
 
             QAction *renameFileAction = menu.addAction("重命名文件");
             connect(renameFileAction, &QAction::triggered, this, [=]() {
@@ -756,26 +796,32 @@ private:
         else {
             QAction *newFileAction = menu.addAction("新建文件");
             connect(newFileAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件夹子类
+                QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
+                Folder *thisFolder = folderItem->thisFolder;
                 // 先弹出一个对话框，让用户输入文件名
                 QString fileName = QInputDialog::getText(myComputerWindow, "新建文件", "请输入文件名");
                 // 如果用户点击取消，直接返回
                 if (fileName.isEmpty()) {
                     return;
                 }
-                createNewFile(folder,fileName.toStdString());
+                createNewFile(thisFolder,fileName.toStdString());
 
                 
             });
 
             QAction *newFolderAction = menu.addAction("新建文件夹");
             connect(newFolderAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件夹子类
+                QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
+                Folder *thisFolder = folderItem->thisFolder;
                 // 先弹出一个对话框，让用户输入文件夹名
                 QString folderName = QInputDialog::getText(myComputerWindow, "新建文件夹", "请输入文件夹名");
                 // 如果用户点击取消，直接返回
                 if (folderName.isEmpty()) {
                     return;
                 }
-                createNewFolder(folder,folderName.toStdString());
+                createNewFolder(thisFolder,folderName.toStdString());
             });
 
             QAction *deleteFolderAction = menu.addAction("删除文件夹");
@@ -885,9 +931,17 @@ private:
     }
 
     // 读写文件
-    void readFile()
+    void readWriteFile(File *file)
     {
-        // todo
+        // QMainWindow *textWindow = new QMainWindow(this);
+        // textWindow->setWindowTitle(QString::fromLocal8Bit(file->get_Name()));
+        // textWindow->resize(800, 600);
+
+        // CustomTextEdit *textEdit = new CustomTextEdit(textWindow);
+        // textWindow->setCentralWidget(textEdit);
+
+        // // 窗口显示
+        // textWindow->show();
     }
 
     // 重命名文件
