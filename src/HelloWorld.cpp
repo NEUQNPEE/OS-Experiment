@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 22:12:33
+ * @LastEditTime : 2024-01-04 22:59:09
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -510,12 +510,17 @@ private:
     // 文本编辑器
     QTextEdit *textEdit;
 
+    // 执行进程
+    ExecutionProcess exeProc;
+
 public:
     // 有参构造函数
     TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
     {
         this->file = file;
         this->fileInfo = new FileInfo(file);
+
+        exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 3, fileInfo, OperationCommand::CREATE_READ_WRITE);
 
         setWindowTitle(QString::fromStdString(file->get_Name()));
         resize(800, 600);
@@ -525,6 +530,11 @@ public:
 
         // 为文本编辑器添加事件过滤器
         textEdit->installEventFilter(this);
+
+        // 读取文件内容
+        readFileContent(fileInfo);
+
+        
     }
 
     bool eventFilter(QObject *obj, QEvent *event) override
@@ -543,19 +553,33 @@ public:
 
     void saveFileContent()
     {
-        // 向进程消息队列中添加一条消息
+        // 先把文本编辑器的内容写入File
+        string data = textEdit->toPlainText().toStdString();
+        file->set_Content(data);
+
+        // 挂载execute_write函数
+
+        exeProc.execute_write(file, &exeProc);
+
+        // exeProc.execute_read(file, &exeProc);
+
+        // textFileWindow->readFileContent(fileInfo);
     }
 
-    // 重写关闭事件，关闭窗口时保存文件内容
+    // 重写关闭事件，关闭窗口时保存文件内容并从就绪队列中移除
     void closeEvent(QCloseEvent *event) override
     {
         saveFileContent();
+
+        scheduler.end();
+        
         event->accept();
     }
 
     // 读取文件内容
     void readFileContent(FileInfo *fileInfo)
     {
+        exeProc.execute_read(file, &exeProc);
         // 写进文本编辑器
         string data = fileInfo->getData();
         textEdit->setText(QString::fromLocal8Bit(data));
@@ -970,11 +994,6 @@ private:
         // string *data = new string("你学塔菲！");
 
         // fileInfo->setData(data);
-
-        ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
-
-
-
 
         // exeProc.execute_write(file, &exeProc);
 
