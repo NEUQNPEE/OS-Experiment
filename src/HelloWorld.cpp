@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-05 02:44:26
+ * @LastEditTime : 2024-01-09 17:20:05
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -11,13 +11,6 @@
 #include "HelloWorld.h"
 
 TaskScheduler &scheduler = TaskScheduler::getInstance();
-
-const std::string pipeName = "my_pipe";
-
-NamedPipe namedPipe(pipeName);
-
-// 本文件打开的次数
-int openTimes = 0;
 
 // 目录结点类型枚举类
 enum class FolderType
@@ -113,20 +106,31 @@ public:
     // 供外部调用的绘制函数，参数为进程ID和内存块号
     void draw(int processId, int blockNumber)
     {
+        QColor color;
+
         // 首先检查进程ID是否已经存在于映射中
         if (colorMap.find(processId) == colorMap.end())
         {
             // 如果不存在，则生成一个随机颜色
-            QColor color = generateRandomColor();
+            color = generateRandomColor();
 
             // 将进程ID和颜色添加到映射中
             colorMap[processId] = color;
         }
 
+        // blockNumber是否合法
+        if (blockNumber < 0 || blockNumber > 63)
+        {
+            return;
+        }
+
+        // tip 通过上述两段if检查过后，能保证参数的合法性
+
         // 获取进程ID对应的颜色
-        QColor color = colorMap[processId];
+        color = colorMap[processId];
 
         // 获取网格布局
+        // todo 希望能在这里面，将layout()的访问权限封闭
         QGridLayout *gridLayout = static_cast<QGridLayout *>(this->layout());
 
         // 获取内存块号对应的标签
@@ -143,7 +147,15 @@ public:
         // 遍历数组，将每个内存块的占用情况显示出来
         for (int i = 0; i < memoryBlocksInfo.size(); ++i)
         {
+            // 检查内存块号是否合法
+            if (memoryBlocksInfo[i] < -1 || memoryBlocksInfo[i] > 63)
+            {
+                continue;
+                // todo 抛出异常
+            }
+
             draw(memoryBlocksInfo[i], i);
+            // todo：三级制调用：传入信息并解析信息的函数，将信息写入暂存的一个函数，将暂存信息显示在界面上的函数
         }
     }
 
@@ -169,6 +181,14 @@ private:
     {
         // 判断颜色是否为黑色或白色
         return (r < 10 && g < 10 && b < 10) || (r > 245 && g > 245 && b > 245);
+
+        // tip 复杂条件判断语句，抽出来写
+        // return isBlack(r, g, b) || isWhite(r, g, b);
+
+        // tip 改成一个参数，rgb用自定义的结构体表示
+        // RGB rgb(r, g, b);
+        // return isBlackOrWhite(rgb);
+    
     }
 };
 
@@ -542,8 +562,6 @@ public:
 
         // 读取文件内容
         readFileContent(fileInfo);
-
-        openTimes++;
     }
 
     bool eventFilter(QObject *obj, QEvent *event) override
@@ -557,31 +575,7 @@ public:
                 return true;
             }
         }
-
-        // 如果ctrl+p,调用同步函数
-        if (event->type() == QEvent::KeyPress)
-        {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-            if (keyEvent->key() == Qt::Key_P && keyEvent->modifiers() == Qt::ControlModifier)
-            {
-                
-            }
-        }
         return false;
-    }
-
-    // 同步函数
-    void sync()
-    {
-        if(openTimes==1)
-        {
-            ExecutionProcess::sendData(pipeName,"Hello from Process A!");
-        }
-
-        if(openTimes==2)
-        {
-            ExecutionProcess::renew(pipeName,&exeProc);
-        }
     }
 
     void saveFileContent()
@@ -589,7 +583,7 @@ public:
         // 先把文本编辑器的内容写入File
         string data = textEdit->toPlainText().toStdString();
         // file->set_Content(data);
-        string *newData = new string(data);
+string *newData = new string(data);
         fileInfo->setData(newData);
 
         // 挂载execute_write函数
@@ -614,20 +608,21 @@ public:
     // 读取文件内容
     void readFileContent(FileInfo *fileInfo)
     {
-        exeProc.execute_read(file, &exeProc);
+exeProc.execute_read(file, &exeProc);
         // 写进文本编辑器
         string data = fileInfo->getData();
         textEdit->setText(QString::fromLocal8Bit(data));
     }
 };
 
-
+// 目录的显示美化布局
+// TODO 改成简单易懂的名字
 class CustomItemDelegate : public QStyledItemDelegate
 {
-    Folder *root;
+Folder *root;
 
 public:
-    explicit CustomItemDelegate(Folder *root, QObject *parent = nullptr) : QStyledItemDelegate(parent) { this->root = root; }
+    explicit CustomItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
     {
@@ -644,17 +639,8 @@ public:
         painter->setPen(option.palette.text().color());
 
         // 绘制图标（根据实际情况设置图标）
-        // 获取当前节点的类型
-        FolderType type = static_cast<QFolderItem *>(index.internalPointer())->getType();
-        QIcon icon;
-        if (type == FolderType::FILE)
-        {
-            icon = QIcon("icon/textPicture.png");
-        }
-        else
-        {
-            icon = QIcon("icon/folderPicture.png");
-        }
+        // 图标就先用WLGOO.png代替了
+        QIcon icon("icon/WLOGO.png");
 
         if (!icon.isNull())
         {
@@ -667,50 +653,10 @@ public:
         // 文本在图标右侧，所以需要调整矩形
         QRect textRect = option.rect.adjusted(5, 0, -5, 0);
         textRect.setLeft(textRect.left() + 25);
+
         // 绘制文本
         painter->drawText(textRect, Qt::AlignVCenter, text);
 
-        if (type == FolderType::FILE)
-        {
-            // 显示当前文件自己的属性，不是根目录的
-            File *file = static_cast<QFolderItem *>(index.internalPointer())->folder->get_File_child()[index.row()];
-            int size = file->get_Size();
-            string create_time = file->get_Create_time();
-            string change_time = file->get_Change_time();
-            // 将文件中的大小、创建时间、修改时间显示出来
-            // 显示的内容在text的右侧但是不要遮挡text的内容
-            QRect textRect = option.rect.adjusted(50, 0, -5, 0);
-            textRect.setLeft(textRect.left() + 25);
-
-            QString fileInfo = QString("大小：%1B  创建时间：%2  修改时间：%3")
-                                   .arg(size)
-                                   .arg(QString::fromLocal8Bit(create_time.c_str()))
-                                   .arg(QString::fromLocal8Bit(change_time.c_str()));
-            painter->drawText(textRect, Qt::AlignVCenter, fileInfo);
-        }
-
-        if (type == FolderType::FOLDER)
-        {
-            // 显示当前文件夹自己的属性，不是根目录的
-            Folder *folder = static_cast<QFolderItem *>(index.internalPointer())->folder;
-            int size = folder->get_Size();
-            int file_number = folder->get_File_number();
-            int folder_number = folder->get_Folder_number();
-            string create_time = folder->get_Create_time();
-            string change_time = folder->get_Change_time();
-            // 将文件夹中的大小、文件数目、文件夹数目、创建时间、修改时间显示出来
-            // 显示的内容在text的右侧但是不要遮挡text的内容
-            QRect textRect = option.rect.adjusted(50, 0, -5, 0);
-            textRect.setLeft(textRect.left() + 25);
-
-            QString folderInfo = QString("大小：%1B  文件数目：%2  文件夹数目：%3  创建时间：%4  修改时间：%5")
-                                     .arg(size)
-                                     .arg(file_number)
-                                     .arg(folder_number)
-                                     .arg(QString::fromLocal8Bit(create_time.c_str()))
-                                     .arg(QString::fromLocal8Bit(change_time.c_str()));
-            painter->drawText(textRect, Qt::AlignVCenter, folderInfo);
-        }
         painter->restore();
     }
 };
@@ -844,7 +790,7 @@ private:
         treeView->resizeColumnToContents(0);
 
         // 使用自定义ItemDelegate来美化视图的显示
-        CustomItemDelegate *itemDelegate = new CustomItemDelegate(root, treeView);
+        CustomItemDelegate *itemDelegate = new CustomItemDelegate(treeView);
         treeView->setItemDelegate(itemDelegate);
 
         // 为树形视图添加上下文菜单
@@ -954,14 +900,14 @@ private:
             connect(newFolderAction, &QAction::triggered, this, [=]() {
                 // 解析QFolderItem为文件夹子类
                 QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
-                Folder *thisFolder = folderItem->thisFolder;
+                Folder *folder = folderItem->folder;
                 // 先弹出一个对话框，让用户输入文件夹名
                 QString folderName = QInputDialog::getText(myComputerWindow, "新建文件夹", "请输入文件夹名");
                 // 如果用户点击取消，直接返回
                 if (folderName.isEmpty()) {
                     return;
                 }
-                createNewFolder(thisFolder,folderName.toStdString());
+                createNewFolder(folder,folderName.toStdString());
             });
 
             QAction *deleteFolderAction = menu.addAction("删除文件夹");
@@ -1082,7 +1028,7 @@ private:
 
         // fileInfo->setData(data);
 
-        // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
+       // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
 
         // exeProc.execute_write(file, &exeProc);
 
