@@ -1,9 +1,17 @@
+/*
+ * @Author       : NieFire planet_class@foxmail.com
+ * @Date         : 2024-01-05 03:14:05
+ * @LastEditors  : NieFire planet_class@foxmail.com
+ * @LastEditTime : 2024-01-11 16:24:25
+ * @FilePath     : \OS-Experiment\src\memory.h
+ * @Description  : 
+ * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
+ * Copyright (c) 2024 by NieFire, All Rights Reserved. 
+ */
 #include <iostream>
 #include <unordered_map>
 
 using namespace std;
-
-
 
 // 初始化内存及相关操作
 void initialMemory();

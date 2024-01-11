@@ -4,7 +4,6 @@
 #include "memory.h"
 #include "memoryBlock.h"
 #include "disk.h"
-#include "process_manager.h"
 
 using namespace std;
 
@@ -35,6 +34,8 @@ void recordProcess_memory()
     for (int i = 0; i < 64; i++)
     {
         process_memory_record[i] = memory_block[i].process_id;
+        // process_memory_record[i] = memory_block[i].page_id;
+
     }
 }
 
@@ -89,6 +90,11 @@ char *ReadDirectoryInfo()
     int block_number = disk.get_dir_info_block_number();
     // return disk.read_block(block_number);
     std::vector<int> block_numbers = disk.read_fat(block_number);
+
+    // todo 进行数据检查，看磁盘返回来的数据对不对
+    // tip 检查内容是否是合法字符
+    // tip 检查内容是否长度合适
+
     return disk.read_blocks(block_numbers);
 }
 
@@ -128,6 +134,11 @@ vector<int> initialBlock_ids(int write_process_id)
     vector<int> temp;
     // 初始化FAT表，以防FAT表有更新
     fat_list = disk.get_fat_block_numbers();
+
+    /**
+     * tip 更新分配内存块的逻辑，按实际操作系统修正
+     */
+
     // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
     for (int i = 0; i < 8; i++)
     {
@@ -218,11 +229,15 @@ int SaveDiskFile(string block_content)
     strcpy(content, block_content.c_str());
     int disk_block_id = disk.save_file(content);
     // 存储文件后磁盘会更新FAT表，所以更新fat_list
+
+    // tip 先修复现有功能，然后这里要把fat表搬入内存，提供更快的交互
+
     fat_list = disk.get_fat_block_numbers();
     return disk_block_id;
 }
 
 // 全局置换CLOCK算法，返回调度后装入的内存块块号
+// tip 如果按照函数式编程的方式，应该传入所有内存块的状况（可能是内存块结构体数组），以及需要置换的新内存块信息（也可能是内存块结构体数组）
 int CLOCK(int page)
 {
     // 装入的内存块的块号
@@ -294,6 +309,8 @@ int CLOCK(int page)
 // 用户写文件内容
 void WriteFile(int file_id, string file_content, char *write_dir_info, int write_process_id)
 {
+    // tip 有个类似于fat表的数据结构：进程id - 内存块号，应该以查找方式，而不是遍历
+
     // 搜索由哪八个内存块负责该进程
     int j = 0;                   // 遍历block_ids
     for (int i = 0; i < 64; i++) // 遍历memory_block
@@ -404,6 +421,8 @@ string ReadFile(int file_id, int read_process_id)
 
     // 从磁盘读出文件内容
     string file_content = ReadDiskFile(block_id);
+
+    // tip 在修复了现有功能之后，要真的把内存动用起来
 
     // 其实接下来直接return file_content即可。为了符合指导书的要求，这里仍先装内存，再从内存读出
     char *ans;
