@@ -6,6 +6,7 @@
 #include <ctime>
 #include <queue>
 #include <sstream>
+#include <map>
 // 得到当前时间的函数
 std::string gettime();
 
@@ -151,7 +152,6 @@ public:
     // 展示文件夹属性
     std::vector<std::string> show();
 };
-
 // 树形目录序列化生成
 void tree_dir_ser_gen(std::string *str);
 
@@ -202,6 +202,12 @@ std::vector<File *> get_file_child(Folder *folder);
 
 // 打开文件
 std::string look_file_content(File *file, int p_id);
+
+// 关闭文件
+void close_file(File *file, int p_id);
+
+// 查找打开文件的进程
+std::vector<int> look_open_file(File *file);
 
 // 查看文件属性
 std::vector<std::string> look_file(File *file);

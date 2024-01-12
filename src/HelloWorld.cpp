@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 17:14:43
+ * @LastEditTime : 2024-01-09 17:20:05
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -106,20 +106,31 @@ public:
     // 供外部调用的绘制函数，参数为进程ID和内存块号
     void draw(int processId, int blockNumber)
     {
+        QColor color;
+
         // 首先检查进程ID是否已经存在于映射中
         if (colorMap.find(processId) == colorMap.end())
         {
             // 如果不存在，则生成一个随机颜色
-            QColor color = generateRandomColor();
+            color = generateRandomColor();
 
             // 将进程ID和颜色添加到映射中
             colorMap[processId] = color;
         }
 
+        // blockNumber是否合法
+        if (blockNumber < 0 || blockNumber > 63)
+        {
+            return;
+        }
+
+        // tip 通过上述两段if检查过后，能保证参数的合法性
+
         // 获取进程ID对应的颜色
-        QColor color = colorMap[processId];
+        color = colorMap[processId];
 
         // 获取网格布局
+        // todo 希望能在这里面，将layout()的访问权限封闭
         QGridLayout *gridLayout = static_cast<QGridLayout *>(this->layout());
 
         // 获取内存块号对应的标签
@@ -136,7 +147,15 @@ public:
         // 遍历数组，将每个内存块的占用情况显示出来
         for (int i = 0; i < memoryBlocksInfo.size(); ++i)
         {
+            // 检查内存块号是否合法
+            if (memoryBlocksInfo[i] < -1 || memoryBlocksInfo[i] > 63)
+            {
+                continue;
+                // todo 抛出异常
+            }
+
             draw(memoryBlocksInfo[i], i);
+            // todo：三级制调用：传入信息并解析信息的函数，将信息写入暂存的一个函数，将暂存信息显示在界面上的函数
         }
     }
 
@@ -162,6 +181,14 @@ private:
     {
         // 判断颜色是否为黑色或白色
         return (r < 10 && g < 10 && b < 10) || (r > 245 && g > 245 && b > 245);
+
+        // tip 复杂条件判断语句，抽出来写
+        // return isBlack(r, g, b) || isWhite(r, g, b);
+
+        // tip 改成一个参数，rgb用自定义的结构体表示
+        // RGB rgb(r, g, b);
+        // return isBlackOrWhite(rgb);
+    
     }
 };
 
@@ -500,8 +527,100 @@ private:
     }
 };
 
+// 文本文件窗口，继承自QMainWindow
+class TextFileWindow : public QMainWindow
+{
+private:
+    File *file;
+    FileInfo *fileInfo;
+
+    // 文本编辑器
+    QTextEdit *textEdit;
+
+    // 执行进程
+    ExecutionProcess exeProc;
+
+    
+
+public:
+    // 有参构造函数
+    TextFileWindow(QWidget *parent = nullptr, File *file = nullptr) : QMainWindow(parent)
+    {
+        this->file = file;
+        this->fileInfo = new FileInfo(file);
+
+        exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 3, fileInfo, OperationCommand::CREATE_READ_WRITE);
+
+        setWindowTitle(QString::fromStdString(file->get_Name()));
+        resize(800, 600);
+
+        textEdit = new QTextEdit(this);
+        setCentralWidget(textEdit);
+
+        // 为文本编辑器添加事件过滤器
+        textEdit->installEventFilter(this);
+
+        // 读取文件内容
+        readFileContent(fileInfo);
+    }
+
+    bool eventFilter(QObject *obj, QEvent *event) override
+    {
+        if (event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_S && keyEvent->modifiers() == Qt::ControlModifier)
+            {
+                saveFileContent();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void saveFileContent()
+    {
+        // 先把文本编辑器的内容写入File
+        string data = textEdit->toPlainText().toStdString();
+        // file->set_Content(data);
+string *newData = new string(data);
+        fileInfo->setData(newData);
+
+        // 挂载execute_write函数
+
+        exeProc.execute_write(file, &exeProc);
+
+        // exeProc.execute_read(file, &exeProc);
+
+        // textFileWindow->readFileContent(fileInfo);
+    }
+
+    // 重写关闭事件，关闭窗口时保存文件内容并从就绪队列中移除
+    void closeEvent(QCloseEvent *event) override
+    {
+        saveFileContent();
+
+        scheduler.end();
+        
+        event->accept();
+    }
+
+    // 读取文件内容
+    void readFileContent(FileInfo *fileInfo)
+    {
+exeProc.execute_read(file, &exeProc);
+        // 写进文本编辑器
+        string data = fileInfo->getData();
+        textEdit->setText(QString::fromLocal8Bit(data));
+    }
+};
+
+// 目录的显示美化布局
+// TODO 改成简单易懂的名字
 class CustomItemDelegate : public QStyledItemDelegate
 {
+Folder *root;
+
 public:
     explicit CustomItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
 
@@ -692,7 +811,14 @@ private:
         if (item->getType() == FolderType::FILE) {
 
             QAction *readFileAction = menu.addAction("读写文件");
-            connect(readFileAction, &QAction::triggered, this, &MyComputerButton::readFile);
+            connect(readFileAction, &QAction::triggered, this, [=]() {
+                // 解析为文件子类
+                QFolderItemFileStyle *fileItem = static_cast<QFolderItemFileStyle *>(item);
+                File *file = fileItem->thisFile;
+
+                readWriteFile(file);
+
+            });
 
             QAction *renameFileAction = menu.addAction("重命名文件");
             connect(renameFileAction, &QAction::triggered, this, [=]() {
@@ -756,19 +882,25 @@ private:
         else {
             QAction *newFileAction = menu.addAction("新建文件");
             connect(newFileAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件夹子类
+                QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
+                Folder *thisFolder = folderItem->folder;
                 // 先弹出一个对话框，让用户输入文件名
                 QString fileName = QInputDialog::getText(myComputerWindow, "新建文件", "请输入文件名");
                 // 如果用户点击取消，直接返回
                 if (fileName.isEmpty()) {
                     return;
                 }
-                createNewFile(folder,fileName.toStdString());
+                createNewFile(thisFolder,fileName.toStdString());
 
                 
             });
 
             QAction *newFolderAction = menu.addAction("新建文件夹");
             connect(newFolderAction, &QAction::triggered, this, [=]() {
+                // 解析QFolderItem为文件夹子类
+                QFolderItemFolderStyle *folderItem = static_cast<QFolderItemFolderStyle *>(item);
+                Folder *folder = folderItem->folder;
                 // 先弹出一个对话框，让用户输入文件夹名
                 QString folderName = QInputDialog::getText(myComputerWindow, "新建文件夹", "请输入文件夹名");
                 // 如果用户点击取消，直接返回
@@ -885,9 +1017,30 @@ private:
     }
 
     // 读写文件
-    void readFile()
+    void readWriteFile(File *file)
     {
-        // todo
+        TextFileWindow *textFileWindow = new TextFileWindow(this, file);
+        textFileWindow->show();
+
+        FileInfo *fileInfo = new FileInfo(file);
+
+        // string *data = new string("你学塔菲！");
+
+        // fileInfo->setData(data);
+
+       // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
+
+        // exeProc.execute_write(file, &exeProc);
+
+        // // 窗口先关闭
+        // textFileWindow->close();
+
+        // exeProc.execute_read(file, &exeProc);
+
+        // textFileWindow->readFileContent(fileInfo);
+
+        // // 窗口再显示
+        // textFileWindow->show();
     }
 
     // 重命名文件
@@ -907,41 +1060,38 @@ private:
     {
         FileInfo *fileInfo = new FileInfo(file);
 
-        DataDeletionProcess::create("文件删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FILE);
+        if (!DataDeletionProcess::create("文件删除进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::DELETE_FILE))
+        {
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("删除文件");
+            msgBox.setText("有文件正在读取该文件，无法删除！");
+
+            msgBox.setStandardButtons(QMessageBox::Yes);
+            QPushButton *yesButton = qobject_cast<QPushButton *>(msgBox.button(QMessageBox::Yes));
+
+            QString buttonStyle = "QPushButton {"
+                                  "    border: 1px solid black;"
+                                  "    padding: 5px;"
+                                  "}";
+
+            yesButton->setStyleSheet(buttonStyle);
+
+            QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(msgBox.layout());
+            if (layout)
+            {
+                layout->setContentsMargins(20, 10, 20, 10);
+                layout->setSpacing(20);
+            }
+
+            msgBox.exec();
+
+            return;
+        };
 
         scheduler.schedule();
 
         parseFolderInfoWrapper(root);
     }
-
-    // // 递归遍历root，找到名为folderName的文件夹
-    // Folder *findFolder(Folder *nowFolder, string folderName)
-    // {
-    //     if (nowFolder->get_Name() == folderName)
-    //     {
-    //         return nowFolder;
-    //     }
-
-    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-    //     {
-    //         Folder *folder = nowFolder->get_Folder_child()[i];
-    //         if (folder != nullptr)
-    //         {
-    //             return folder;
-    //         }
-    //     }
-
-    //     for (int i = 0; i < nowFolder->get_Folder_child().size(); i++)
-    //     {
-    //         Folder *folder = findFolder(nowFolder->get_Folder_child()[i], folderName);
-    //         if (folder != nullptr)
-    //         {
-    //             return folder;
-    //         }
-    //     }
-
-    //     return nullptr;
-    // }
 };
 
 HelloWorld::HelloWorld(QWidget *parent)

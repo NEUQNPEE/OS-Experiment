@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-04 14:52:52
+ * @LastEditTime : 2024-01-05 02:03:50
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -67,15 +67,27 @@ void DiskBlock::set_content(char *content)
     // 如果开头就是'\0'，说明没内容，直接写40个'\0'进去
     if (content[0] == '\0')
     {
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < 40; i++)
         {
             this->content[i] = '\0';
         }
         return;
     }
 
+    // 检查content大小，如果小于磁盘块大小，就用空字符填充
+    size_t length = strlen(content);
+    // 转换为int类型
+    int int_length = static_cast<int>(length);
+    if (int_length < 40)
+    {
+        strcpy(this->content, content);
+        return;
+    }
+    // 强行将content的末尾置为'\0'
+    content[40 - 1] = '\0';
+
     // 检查磁盘块大小是否足够
-    if (strlen(content) > size)
+    if (strlen(content) > 40)
     {
         std::cout << "磁盘块大小不足" << std::endl;
         return;
@@ -578,16 +590,19 @@ void DiskManager::write_blocks(std::vector<int> block_numbers, char *content)
         i++;
     }
 }
-
 // 从多个盘块读取内容
 char *DiskManager::read_blocks(std::vector<int> block_numbers)
 {
-    char *content = new char[disk.get_block_size() * block_numbers.size()];
+    int size = block_numbers.size();
+    int num =(disk.get_block_size()-1) * block_numbers.size() + 1;
+    char *content = new char[(disk.get_block_size()-1) * block_numbers.size() + 1];
     for (int i = 0; i < block_numbers.size(); i++)
     {
         int t = block_numbers[i];
         strncpy(content + i * (disk.get_block_size()-1), read_block(block_numbers[i]), disk.get_block_size() - 1);
     }
+    // 添加结束符
+    content[(disk.get_block_size()-1) * block_numbers.size()] = '\0';
     return content;
 }
 

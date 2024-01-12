@@ -1,9 +1,9 @@
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 #include "memory.h"
 #include "memoryBlock.h"
 #include "disk.h"
-#include "process_manager.h"
 
 using namespace std;
 
@@ -28,18 +28,73 @@ string page_content[1024];
 // 初始化DiskManager类。如果main函数已初始化，此条需注释
 DiskManager disk;
 
-// 写入目录信息
+// 记录内存块调度状况
+void recordProcess_memory()
+{
+    for (int i = 0; i < 64; i++)
+    {
+        process_memory_record[i] = memory_block[i].process_id;
+        // process_memory_record[i] = memory_block[i].page_id;
+
+    }
+}
+
+// // 序列化文件ID和起始盘块号的映射
+// string encodeMap()
+// {
+//     string ans = "##";
+//     for (auto iter : file_id_block_map)
+//     {
+//         ans += to_string(iter.first) + " " + to_string(iter.second) + " ";
+//     }
+//     ans = ans + "##";
+//     return ans;
+// }
+
+// // 解析序列化后的文件ID和起始盘块号的映射
+// void decodeMap(string info)
+// {
+//     // 暂存解析出的数字
+//     vector<int> temp;
+//     // 如果是空映射
+//     if (info.size() < 8) // ##1 2 ##
+//         return;
+//     // 去掉起始和末尾的分隔符##
+//     int map_begin = info.find("##") + 2;
+//     int map_end = info.rfind("##") - 1;
+//     int len = map_end - map_begin + 1;
+//     info = info.substr(map_begin, len);
+
+//     // 解析文件ID和起始盘块号的映射
+//     stringstream str(info);
+//     string number;
+//     while (str >> number)
+//     {
+//         temp.push_back(stoi(number));
+//     }
+//     int temp_size = temp.size();
+//     for (int i = 0; i < temp_size - 1; i += 2)
+//     {
+//         file_id_block_map[temp[i]] = temp[i + 1];
+//     }
+// }
+
+// 写入目录信息和序列化后的ID和起始盘块号映射
 void WriteDirectoryInfo(char *info)
 {
     disk.save_dir_info(info);
 }
-
-// 返回目录信息
+// 读取目录信息和序列化后的ID和起始盘块号映射
 char *ReadDirectoryInfo()
 {
     int block_number = disk.get_dir_info_block_number();
     // return disk.read_block(block_number);
     std::vector<int> block_numbers = disk.read_fat(block_number);
+
+    // todo 进行数据检查，看磁盘返回来的数据对不对
+    // tip 检查内容是否是合法字符
+    // tip 检查内容是否长度合适
+
     return disk.read_blocks(block_numbers);
 }
 
@@ -69,8 +124,8 @@ void initialMemory()
     disk.init_disk();
     // 初始化FAT表
     fat_list = disk.get_fat_block_numbers();
-    // 初始化目录信息
-    dir_info = "";
+    // 初始化目录信息和文件ID与起始盘块号映射
+    dir_info = ReadDirectoryInfo();
 }
 
 // 为进程分配八个内存块
@@ -79,6 +134,11 @@ vector<int> initialBlock_ids(int write_process_id)
     vector<int> temp;
     // 初始化FAT表，以防FAT表有更新
     fat_list = disk.get_fat_block_numbers();
+
+    /**
+     * tip 更新分配内存块的逻辑，按实际操作系统修正
+     */
+
     // 外遍历：确定装文件的内存块。内遍历：搜索未装页的内存块
     for (int i = 0; i < 8; i++)
     {
@@ -92,21 +152,28 @@ vector<int> initialBlock_ids(int write_process_id)
                     temp.push_back(block_ids[j]);
                 return temp;
             }
-            if (memory_block[j].page_id < 0)
+            if (memory_block[j].process_id < 0)
             {
                 block_ids[i] = memory_block[j].block_id;
+                memory_block[block_ids[i]].process_id = write_process_id;
                 break;
             }
         }
     }
-    // 八个内存块记录当前进程的ID
-    for (int i = 0; i < 8; i++)
-    {
-        memory_block[block_ids[i]].process_id = write_process_id;
-    }
+    // // 八个内存块记录当前进程的ID
+    // for (int i = 0; i < 8; i++)
+    // {
+    //     memory_block[block_ids[i]].process_id = write_process_id;
+    // }
 
     for (int j = 0; j < 8; j++)
+    {
+        int i = block_ids[j];
         temp.push_back(block_ids[j]);
+    }
+
+    recordProcess_memory();
+
     return temp;
 }
 
@@ -137,17 +204,10 @@ void clearBlock_ids(int clear_process_id)
 
     // 顺带把暂存页内容的page_content清空
     fill(page_content, page_content + 1024, "");
+
+    recordProcess_memory();
     // 顺带把当前进程调度内存块的状况清空
     // clock_record.clear();
-}
-
-// 记录内存块调度状况
-void recordProcess_memory()
-{
-    for (int i = 0; i < 64; i++)
-    {
-        process_memory_record[i] = memory_block[i].process_id;
-    }
 }
 
 // 将文件页的内容填充到内存中。
@@ -165,14 +225,19 @@ void fillMemory(int page_id, int block_id)
 // 调用disk.cpp的函数，将修改后的文件内容传进磁盘，返回文件的起始磁盘块号
 int SaveDiskFile(string block_content)
 {
-    char *content = block_content.data();
+    char *content = new char[block_content.size() + 1];
+    strcpy(content, block_content.c_str());
     int disk_block_id = disk.save_file(content);
     // 存储文件后磁盘会更新FAT表，所以更新fat_list
+
+    // tip 先修复现有功能，然后这里要把fat表搬入内存，提供更快的交互
+
     fat_list = disk.get_fat_block_numbers();
     return disk_block_id;
 }
 
 // 全局置换CLOCK算法，返回调度后装入的内存块块号
+// tip 如果按照函数式编程的方式，应该传入所有内存块的状况（可能是内存块结构体数组），以及需要置换的新内存块信息（也可能是内存块结构体数组）
 int CLOCK(int page)
 {
     // 装入的内存块的块号
@@ -244,6 +309,8 @@ int CLOCK(int page)
 // 用户写文件内容
 void WriteFile(int file_id, string file_content, char *write_dir_info, int write_process_id)
 {
+    // tip 有个类似于fat表的数据结构：进程id - 内存块号，应该以查找方式，而不是遍历
+
     // 搜索由哪八个内存块负责该进程
     int j = 0;                   // 遍历block_ids
     for (int i = 0; i < 64; i++) // 遍历memory_block
@@ -257,11 +324,19 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
             break;
     }
 
-    string ans = "";
-    // 文件分页并装入内存
+    // string ans = "";
+    //  文件分页并装入内存
     int file_size = file_content.size(); // 文件长度
-    int page_count = file_size / 40;     // 文件分块后的页数
-    int write_block_id = -1;             // 写入的内存块的块号
+    int page_count;
+    if (file_content.size() == 0)
+    {
+        page_count = 0;
+    }
+    else
+    {
+        page_count = file_size / 40; // 文件分块后的页数
+    }
+    int write_block_id = -1;         // 写入的内存块的块号
     for (int i = 0; i < page_count; i++)
     {
         page_content[i] = file_content.substr(i * 40, 40);
@@ -292,15 +367,16 @@ void WriteFile(int file_id, string file_content, char *write_dir_info, int write
         file_id_block_map.insert(pair<int, int>(file_id, disk_block_id));
     }
     // 更新目录信息
-    disk.save_dir_info(write_dir_info);
-    // 释放内存
-    // clearBlock_ids();
+    WriteDirectoryInfo(write_dir_info);
+    // 清空文件页内容暂存
+    fill(page_content, page_content + 1024, "NULL");
 }
 
 // 从磁盘读取文件内容
 char *ReadDiskFile(int block_id)
 {
-    return disk.read_block(block_id);
+    fat_list = disk.read_fat(block_id);
+    return disk.read_blocks(fat_list);
 }
 
 // 读取内存块中的函数
@@ -346,6 +422,8 @@ string ReadFile(int file_id, int read_process_id)
     // 从磁盘读出文件内容
     string file_content = ReadDiskFile(block_id);
 
+    // tip 在修复了现有功能之后，要真的把内存动用起来
+
     // 其实接下来直接return file_content即可。为了符合指导书的要求，这里仍先装内存，再从内存读出
     char *ans;
     // 文件分页并装入内存
@@ -358,8 +436,8 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(i);
         fillMemory(i, write_block_id);
         recordProcess_memory();
-        char *temp = ans + i * 40;
-        temp = ReadMemoryBlock(write_block_id, 40);
+        // char *temp = ans + i * 40;
+        // temp = ReadMemoryBlock(write_block_id, 40);
     }
     // 查找是否有不足40B的尾巴
     int remainder = file_size % 40;
@@ -369,13 +447,12 @@ string ReadFile(int file_id, int read_process_id)
         write_block_id = CLOCK(page_count);
         fillMemory(page_count, write_block_id);
         recordProcess_memory();
-        char *temp = ans + page_count * 40;
-        temp = ReadMemoryBlock(write_block_id, remainder);
+        // char *temp = ans + page_count * 40;
+        // temp = ReadMemoryBlock(write_block_id, remainder);
     }
 
-    // 释放内存
-    // clearBlock_ids();
-
+    // 清空文件页内容暂存
+    fill(page_content, page_content + 1024, "NULL");
     // return ans;
     return file_content;
 }

@@ -1,6 +1,8 @@
 #include "tree_directory.h"
 #include "memory.h"
 Folder *root = new Folder("root");
+std::map<int, File *> process_open_file;
+std::map<File *, int> file_open_num;
 std::string gettime()
 {
     std::string str = "";
@@ -150,6 +152,7 @@ void File::change_Addr(std::string str)
 // 构造函数
 File::File(std::string str)
 {
+    file_open_num.insert(std::pair<File *, int>(this, 0));
     this->size = 0;
     this->name = str;
     this->Create_time = gettime();
@@ -159,6 +162,7 @@ File::File(std::string str)
 // 删除文件
 void File::delete_File()
 {
+    file_open_num.erase(this);
     std::string time = gettime();
     int n = this->size * (-1);
     Folder *Temp_dad = this->dad;
@@ -902,9 +906,33 @@ std::vector<File *> get_file_child(Folder *folder)
 // 打开文件
 std::string look_file_content(File *file, int p_id)
 {
+    process_open_file.insert(std::pair<int, File *>(p_id, file));
+    std::map<File *, int>::iterator pos = file_open_num.find(file);
+    pos->second++;
     return ReadFile(file->get_ID(), p_id);
 }
 
+// 关闭文件
+void close_file(File *file, int p_id)
+{
+    std::map<File *, int>::iterator pos2 = file_open_num.find(file);
+    pos2->second--;
+    process_open_file.erase(p_id);
+}
+
+// 查找打开文件的进程
+std::vector<int> look_open_file(File *file)
+{
+    std::vector<int> open_file_process;
+    for (std::map<int, File *>::iterator pos = process_open_file.begin(); pos != process_open_file.end(); pos++)
+    {
+        if (pos->second == file)
+        {
+            open_file_process.push_back(pos->first);
+        }
+    }
+    return open_file_process;
+}
 // 查看文件属性
 std::vector<std::string> look_file(File *file)
 {
