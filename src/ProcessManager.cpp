@@ -66,13 +66,13 @@ string Process::getProcessStateStr() const {
 }
 
 // 从进程列表中删除该进程
+// tip 可以更新为map，key为pid，value为Process指针
 void ProcessManager::deleteProcess(int pid) {
     for (int i = 0; i < processList.size(); i++) {
         if (processList[i]->pid == pid) {
             processList.erase(processList.begin() + i);
             break;
         }
-
     }
 }
 
@@ -80,6 +80,7 @@ void ProcessManager::deleteProcess(int pid) {
 InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
         : Process(name, pid, priority, ProcessState::RUNNING, type) {}
 
+// tip create方法因为字符串形式的参数传递需要全部修改
 InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
     auto *initProcess = new InitProcess(name, pid, priority, processType);
     initProcess->state = ProcessState::RUNNING;

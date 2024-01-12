@@ -62,6 +62,9 @@ enum class OperationCommand {
 /**
  * 文件信息结构体
  */
+
+// tip 前后端交互的数据结构要修改为纯字符串传递，字符串本身是什么数据结构的序列化结果还要另当别论
+
 struct FileInfo {
     File *file;
     Folder *folder;
@@ -118,6 +121,9 @@ struct FileInfo {
 /**
  * 命名管道结构体
  */
+
+// tip 命名管道的主要代码部分由文件系统完成，进程只需要调用即可
+
 struct NamedPipe {
     std::string pipeName;
     int fileDescriptor;
@@ -144,7 +150,7 @@ public:
     ProcessState state;          // 进程状态
     ProcessType type;            // 进程类型
     vector<int> allocatedMemory; // 内存块地址
-    FileInfo *fileInfo{};         // 文件信息
+    FileInfo *fileInfo{};        // 文件信息
     OperationCommand command;    // 操作命令
 
     Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -284,6 +290,10 @@ public:
 /**
  * 任务调度类
  */
+
+// tip 模拟进程调度的分时间片：假设正在执行的进程都不阻断，只有非运行的进程能够被分时间片换走
+// tip 通过引入时间机制，让前端展示的内容动态变化
+
 class TaskScheduler {
 public:
     static TaskScheduler &getInstance() {
