@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-05 02:03:50
+ * @LastEditTime : 2024-01-13 16:54:37
  * @FilePath     : \OS-Experiment\src\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -270,7 +270,7 @@ DiskManager::DiskManager()
 }
 
 void DiskManager::init_disk()
-{
+{   
     DiskBuilder disk_builder;
     disk = disk_builder.set_disk_size(40 * 1024)
                .set_block_size(40)
@@ -401,9 +401,7 @@ int DiskManager::update_file_info(const char *file_info, int block_number)
     delete_fat(block_number);
 
     // 重新存入文件信息
-    int begin_block_number = save_file(file_info);
-
-    return begin_block_number;
+    return save_file(file_info);
 }
 
 void DiskManager::str()
@@ -619,6 +617,8 @@ char *DiskManager::read_blocks(std::vector<int> block_numbers)
 // 存入目录信息
 void DiskManager::save_dir_info(const char *dir_info)
 {
+    // tip 在得知序列化格式之后可以进行合法性检测
+
     // 释放原来的目录信息占用的块
     if (dir_info_block_number != -1)
     {
@@ -823,6 +823,9 @@ void DiskManager::load_super_block()
 
     // 读取超级块内容，里面就一个int：目录信息起始盘块号
     // 目前超级块定死304号盘块，目录信息定死在305号盘块
+
+    // tip 需要灵活指定超级块是那一块
+    
     char *super_block_content = read_block(304);
     // 解析超级块内容
     int i = 0;

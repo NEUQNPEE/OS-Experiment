@@ -274,6 +274,19 @@ public:
     // 获取fat盘块号
     std::vector<int> get_fat_block_numbers();
 
+    // 根据起始盘块号读取fat表，返回盘块号数组
+    std::vector<int> read_fat(int block_number);
+
+    // qt所需的磁盘块占用情况，返回1024大小的bool数组（std标准数组）
+    std::vector<bool> get_disk_block_status();
+
+    // qt所需的成组链块的情况，返回1024+8大小的int数组（std标准数组）
+    std::vector<int> get_group_block_status();
+
+     // 获取文件分配表
+    std::map<int, int> get_file_allocation_table();
+
+private:
     // fat序列化
     void save_fat();
 
@@ -282,9 +295,6 @@ public:
 
     // 从fat中删除n条记录，传入起始盘块号
     void delete_fat(int block_number);
-
-    // 获取文件分配表
-    std::map<int, int> get_file_allocation_table();
 
     // 读取超级块，超级块里面存了文件信息起始盘块号和目录信息起始盘块号
     void load_super_block();
@@ -297,13 +307,4 @@ public:
 
     // 模拟用加载
     void load_info_from_txt();
-
-    // 根据起始盘块号读取fat表，返回盘块号数组
-    std::vector<int> read_fat(int block_number);
-
-    // qt所需的磁盘块占用情况，返回1024大小的bool数组（std标准数组）
-    std::vector<bool> get_disk_block_status();
-
-    // qt所需的成组链块的情况，返回1024+8大小的int数组（std标准数组）
-    std::vector<int> get_group_block_status();
 };
