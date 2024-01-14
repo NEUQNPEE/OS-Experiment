@@ -1,8 +1,12 @@
 #include "tree_directory.h"
 #include "memory.h"
+// tip 很明显应该为单例。
 Folder *root = new Folder("root");
 std::map<int, File *> process_open_file;
 std::map<File *, int> file_open_num;
+
+// 全局常量，确定字符串长度上限
+const int MAX_STR_LEN = 10000000;
 std::string gettime()
 {
     std::string str = "";
@@ -38,6 +42,12 @@ char *gotoChar(std::string str)
 // 将char数组转化为字符串
 std::string gotoString(char *ch)
 {
+    // 检查参数
+    if (ch == NULL)
+    {
+        return "";
+    }
+
     std::string str(ch);
     return str;
 }
@@ -84,6 +94,7 @@ void File::set_Name_Type(std::string str)
 // 设置标识符
 void File::set_ID()
 {
+    // tip 不能投机取巧，生成方式要修改，还要判断是否重复
     std::string str = this->Create_time;
     std::string str1 = "";
     int n = 0;
@@ -116,6 +127,7 @@ void File::set_ID()
 // 写内容
 void File::set_Content(std::string str)
 {
+    // tip 这里没有对文件对象本身的内容做操作，只是将内容写入内存，修改其修改时间和大小。
     std::string time = gettime();
     this->Change_time = time;
     int n = str.size();
@@ -632,15 +644,15 @@ std::vector<std::string> Folder::show()
     return v;
 }
 
-// 文件内容读入文件
-void file_con_ser_gen(File *file)
-{
-}
+// // 文件内容读入文件
+// void file_con_ser_gen(File *file)
+// {
+// }
 
-// 文件内容传给内存
-void file_con_ser(File *file)
-{
-}
+// // 文件内容传给内存
+// void file_con_ser(File *file)
+// {
+// }
 
 // 树形目录序列化生成
 void tree_dir_ser_gen(std::string *str)
@@ -906,7 +918,11 @@ std::vector<File *> get_file_child(Folder *folder)
 // 打开文件
 std::string look_file_content(File *file, int p_id)
 {
+    // tip 太神秘了，文件系统怎么会有这个数据结构
+    // tip 应该是进程自己的数据结构，向文件系统提供接口
     process_open_file.insert(std::pair<int, File *>(p_id, file));
+    // tip 这里是找到文件分配表中该文件对应的一条记录，然后将其打开次数加一，然后再读取文件内容。
+    // tip 不应直接操作数据结构，作为一个独立的功能，文件分配表应该有自己的结构体，读写函数等
     std::map<File *, int>::iterator pos = file_open_num.find(file);
     pos->second++;
     return ReadFile(file->get_ID(), p_id);
