@@ -20,14 +20,6 @@ enum class ProcessState {
 };
 
 /**
- * 队列类型枚举
- */
-enum class QueueType {
-    READY_QUEUE,
-    BLOCKED_QUEUE
-};
-
-/**
  * 进程类型枚举,实际上一般的操作系统不会简单的将进程值分为这三类
  */
 enum class ProcessType {
@@ -57,65 +49,6 @@ enum class OperationCommand {
     RENAME_FILE = 7,
     // 退出
     EXIT = 0
-};
-
-/**
- * 文件信息结构体
- */
-
-// tip 前后端交互的数据结构要修改为纯字符串传递，字符串本身是什么数据结构的序列化结果还要另当别论
-
-struct FileInfo {
-    File *file;
-    Folder *folder;
-    std::string *fileName;
-    std::string *data;
-
-    // 默认构造方法
-    FileInfo() = default;
-
-    // 构造方法1:创建新文件，需要folder和fileName
-    FileInfo(Folder *folder, string *fileName) {
-        this->file = nullptr;
-        this->folder = folder;
-        this->fileName = fileName;
-        this->data = new string("");
-    }
-
-    // 构造方法2:删除文件夹，只要一个folder
-    explicit FileInfo(Folder *folder) {
-        this->file = nullptr;
-        this->folder = folder;
-        this->fileName = new string("");
-        this->data = new string("");
-    }
-
-    // 构造方法3:删除文件，只要一个file
-    explicit FileInfo(File *file) {
-        this->file = file;
-        this->folder = nullptr;
-        this->fileName = new string("");
-        this->data = new string("");
-    }
-
-    // 构造方法4:重命名文件，需要folder、file和fileName
-    FileInfo(Folder *folder, File *file, string *fileName) {
-        this->folder = folder;
-        this->file = file;
-        this->fileName = fileName;
-        this->data = new string("");
-    }
-
-    // get方法
-    string getData() {
-        return *this->data;
-    }
-
-    // set方法
-    void setData(string *data) {
-        this->data = data;
-    }
-
 };
 
 /**
@@ -150,10 +83,11 @@ public:
     ProcessState state;          // 进程状态
     ProcessType type;            // 进程类型
     vector<int> allocatedMemory; // 内存块地址
-    FileInfo *fileInfo{};        // 文件信息
+    std::string fName;           // 文件/文件夹名
+    std::string path;            // 文件夹/文件路径
     OperationCommand command;    // 操作命令
 
-    Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
+    Process(string name, int pid, ProcessState state, ProcessType type);
 
     // 默认构造方法
     Process() = default;
@@ -162,10 +96,8 @@ public:
     bool operator<(const Process &other) const;
 
     // 虚函数 execute,用于执行进程
-    virtual void execute() = 0;
-
-    // 虚函数 destroy,用于销毁进程
-    virtual void destroy() = 0;
+    virtual void execute() {
+    }
 
     // 获取进程状态的str
     [[nodiscard]] string getProcessStateStr() const;
@@ -176,34 +108,27 @@ public:
  */
 class ProcessManager {
 public:
-    std::vector<Process *> processList;
+    std::map<int, Process *> processMap;
     std::priority_queue<Process *> readyQueue;
     std::queue<Process *> blockQueue;
-    // 新建一个用于传递命令的消息队列，0为退出，1为写数据
-    // std::queue<int> commandQueue;
 
-    // 从进程列表中删除该进程
-    void deleteProcess(int pid);
+
 };
+
+/**
+ * 从进程管理类中删除进程
+ * @param pid  进程pid
+ */
+void deleteProcess(int pid);
 
 /**
  * 初始化进程,直到操作系统关闭才会释放内存
  */
 class InitProcess : public Process {
-private:
-    // 构造方法
-    InitProcess(string &name, int pid, int priority, ProcessType type);
-
-    Folder *folder;
-
 public:
-    static InitProcess create(string name, int pid, int priority, ProcessType processType);
+    InitProcess(string name, int pid, ProcessType type);
 
-    void execute() override;
-
-    void destroy() override;
-
-    Folder *get_folder();
+    static Folder *execute_init();
 };
 
 /**
@@ -211,14 +136,10 @@ public:
  */
 class DataGenerationProcess : public Process {
 public:
-    // 构造方法
-    DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
-
-    static void create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    DataGenerationProcess(string name, int pid, ProcessState state, ProcessType type);
 
     void execute() override;
 
-    void destroy() override;
 };
 
 /**
@@ -226,54 +147,36 @@ public:
  */
 class DataDeletionProcess : public Process {
 public:
-    // 构造方法
-    DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
-
-    static bool create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    DataDeletionProcess(string name, int pid, ProcessState state, ProcessType type);
 
     void execute() override;
-
-    void destroy() override;
 };
 
-/**
- * 用户输入指令枚举
- */
-enum class UserInputCommand {
-    // 退出
-    EXIT = 0,
-    // 写入数据
-    WRITE_DATA = 1,
-};
 
 /**
  * 执行进程
  */
 class ExecutionProcess : public Process {
 public:
-    // 构造方法
-    ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
+    ExecutionProcess(string name, int pid, ProcessState state, ProcessType type);
 
-    // 默认构造方法
     ExecutionProcess() = default;
-    
+
     static void sendData(const std::string &pipeName, const std::string &data);
 
     static std::string receiveData(const std::string &pipeName);
 
-    static void renew(const std::string& pipeName,ExecutionProcess *executionProcess);
-
-    static ExecutionProcess create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command);
+    static void renew(const std::string &pipeName, ExecutionProcess *executionProcess);
 
     void execute() override;
-
-    void destroy() override;
-
-    static void execute_read(File *file, ExecutionProcess *executionProcess);
-    static void execute_write(File *file, ExecutionProcess *executionProcess);
-
-    // void execute_user_input_command(File *file, ExecutionProcess *executionProcess);
 };
+
+/**
+ * 删除进程
+ * @param process 进程
+ * @return  是否删除成功
+ */
+bool destroy_process(Process *process);
 
 /**
  * PID生成器
@@ -301,16 +204,6 @@ public:
         return instance;
     }
 
-    std::vector<std::thread> threads; // 存储线程对象的容器
-
-    void createThreads(int numThreads);
-
-    void joinThreads();
-
-    void schedule();
-
-    void end();
-
 private:
     TaskScheduler() = default;
 
@@ -324,11 +217,3 @@ private:
 
     TaskScheduler &operator=(TaskScheduler &&) = delete;
 };
-
-vector<int> show_process_record();
-
-vector<bool> show_disk_block_status();
-
-vector<int> show_group_block_status();
-
-vector<Process *> get_process_list();

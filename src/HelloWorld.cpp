@@ -1378,7 +1378,7 @@ void HelloWorld::showTaskManager()
     GroupBlockWidget *groupBlockWidget = new GroupBlockWidget(groupBlockTab);
     groupBlockLayout->addWidget(groupBlockWidget);
 
-    std::vector<Process *> processList = get_process_list();
+    std::vector<Process *> processList = get_process_map();
     int processNumber = processList.size();
     for (int i = 0; i < processList.size(); ++i)
     {
