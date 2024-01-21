@@ -544,7 +544,7 @@ std::string ReadFile(int file_id, int read_process_id)
     if(process_memory_block_list.count(read_process_id) == 0)
     {
         std::cout<<"写文件操作所属的进程ID不存在!"<<std::endl;
-        return;
+        return "";
     }
     // 通过映射找到哪些内存块负责该进程
     std::vector<int> temp = process_memory_block_list[read_process_id];

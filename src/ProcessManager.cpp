@@ -1,7 +1,6 @@
 #include <utility>
-
 #include "process_manager.h"
-#include "memoryBlock.h"
+#include "memory_for_process.h"
 
 ProcessManager processManager;
 
@@ -223,7 +222,8 @@ ExecutionProcess ExecutionProcess::create(string name, int pid, int priority, Fi
     // 将该进程放入进程列表,就绪队列
     processManager.processList.push_back(executionProcess);
     // 申请内存
-    if (initialBlock_ids(executionProcess->pid)[0] == -1) {
+    // tip 先默认申请8个内存块，之后再改
+    if (assignMemoryBlock(executionProcess->pid,8)[0] == -1) {
         //todo 在这里向QT发送内存已满信息
 
         //加入阻塞队列
@@ -245,7 +245,7 @@ void ExecutionProcess::execute() {
 void ExecutionProcess::destroy() {
     // 从用户文件表中删除对应的进程占用
     close_file(fileInfo->file, this->pid);
-    clearBlock_ids(this->pid);
+    clearMemoryBlock(this->pid);
     processManager.deleteProcess(this->pid);
     // 将阻塞队列中的进程放入就绪队列
     if (!processManager.blockQueue.empty()) {

@@ -1,5 +1,4 @@
 #include "tree_directory.h"
-#include "memory.h"
 // tip 很明显应该为单例。
 Folder *root = new Folder("root");
 std::map<int, File *> process_open_file;

@@ -26,6 +26,9 @@
 #include <QModelIndex>
 #include <QInputDialog>
 
+#include "UI/task_manager/task_manager.h"
+#include "UI/filewindow_txt/txt_window.h"
+
 #include "process_manager.h"
 class HelloWorld : public QMainWindow
 {
@@ -35,8 +38,12 @@ public:
     HelloWorld(QWidget *parent = nullptr);
     ~HelloWorld();
 
+    // close()函数
+    void close();
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    
 
 private:
     Ui_HelloWorld *ui;
