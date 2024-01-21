@@ -9,7 +9,7 @@
 #include <iostream>
 #include <unordered_map>
 
-using namespace std;
+//using namespace std;
 
 // 初始化内存及相关操作
 void initialMemory();
@@ -21,10 +21,10 @@ void WriteDirectoryInfo(char *info);
 char *ReadDirectoryInfo();
 
 // 用户写文件内容。修改文件和保存文件均调用这个接口
-void WriteFile(int file_id, string file_content, char *dir_info, int write_process_id);
+void WriteFile(int file_id, std::string file_content, char *dir_info, int write_process_id);
 
 // 用户读文件内容。
-string ReadFile(int file_id, int read_process_id);
+std::string ReadFile(int file_id, int read_process_id);
 
 // 用户删除文件。请传入删除文件的ID
 void DeleteFile(int file_id);

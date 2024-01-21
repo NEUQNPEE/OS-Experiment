@@ -9,20 +9,20 @@
 #include <iostream>
 #include <vector>
 
-using namespace std;
+//using namespace std;
 
 //创建进程时分配内存块,返回分配内存块的块号。如果都是-1，则表明内存已满
-vector<int> assignMemoryBlock(int process_id, int block_sum);
+std::vector<int> assignMemoryBlock(int process_id, int block_sum);
 
 //撤销进程时释放内存块
 void clearMemoryBlock(int clear_process_id);
 
 //返回当前进程对内存块的调度状况
-vector<int> getProcessRecord();
+std::vector<int> getProcessRecord();
 
 // 向上传递磁盘提供给QT的磁盘块占用情况
-vector<bool> memory_get_disk_block_status();
+std::vector<bool> memory_get_disk_block_status();
 
 // 向上传递磁盘提供给QT的成组链块的情况
-vector<int> memory_get_group_block_status();
+std::vector<int> memory_get_group_block_status();
 

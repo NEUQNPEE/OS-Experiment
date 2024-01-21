@@ -43,10 +43,10 @@ private:
 
     // 页表
     //外层是进程ID和表的映射，内层是该进程的页表
-    unordered_map<int, unordered_map<int, int>> process_page_list;
+    std::unordered_map<int, unordered_map<int, int>> process_page_list;
 
     //进程和所占用内存块的映射
-    unordered_map<int, vector<int> > process_memory_block_list;
+    std::unordered_map<int, vector<int> > process_memory_block_list;
 
     // 正在调度的进程所占用的内存块的ID。至多占用64块
     int *process_memory_now_id = new int[64];
@@ -55,16 +55,16 @@ private:
     int free_block_sum;
 
     // 正在装入内存的文件分块后的各文件页内容。页数量最多为1024（40KB/40B）
-    string *page_content = new std::string[1024];
+    std::string *page_content = new std::string[1024];
 
     // 内存管理系统存储的fat表
-    vector<int> fat_list;
+    std::vector<int> fat_list;
 
     // 目录信息
     char *dir_info;
 
     // 文件ID和文件起始盘块号的映射
-    unordered_map<int, int> file_disk_block_map;
+    std::unordered_map<int, int> file_disk_block_map;
 
 public:
     // 获取内存
@@ -91,19 +91,19 @@ public:
     }
 
     // 获取页表
-    unordered_map<int, unordered_map<int, int>> getProcess_page_list()
+    std::unordered_map<int, std::unordered_map<int, int>> getProcess_page_list()
     {
         return process_page_list;
     }
 
     // 写入页表
-    void setProcess_page_list(unordered_map<int, unordered_map<int, int>> content)
+    void setProcess_page_list(std::unordered_map<int, std::unordered_map<int, int>> content)
     {
         process_page_list = content;
     }
 
     //获取进程和内存块的映射
-    unordered_map<int, vector<int> > getProcess_memory_block_list()
+    std::unordered_map<int, std::vector<int> > getProcess_memory_block_list()
     {
         return process_memory_block_list;
     }
@@ -139,7 +139,7 @@ public:
     }
 
     // 获取正在装入内存的文件的各文件页内容
-    string *getPage_content()
+    std::string *getPage_content()
     {
         return page_content;
     }
@@ -175,7 +175,7 @@ public:
     }
 
     //获取文件和磁盘块映射
-    unordered_map<int, int> getFile_disk_block_map()
+    std::unordered_map<int, int> getFile_disk_block_map()
     {
         return file_disk_block_map;
     }
