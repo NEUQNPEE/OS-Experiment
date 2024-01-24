@@ -11,9 +11,10 @@ find_package(Qt6 COMPONENTS Widgets REQUIRED)
 aux_source_directory(./src srcs)
 
 # 收集UI文件夹下的所有文件
-aux_source_directory(./src/UI/filewindow_txt srcs)
-aux_source_directory(./src/UI/mycomputer srcs)
-aux_source_directory(./src/UI/task_manager srcs)
+aux_source_directory(./src/ui/filewindow_txt srcs)
+aux_source_directory(./src/ui/mycomputer srcs)
+aux_source_directory(./src/ui/task_manager srcs)
+aux_source_directory(./src/ui/win srcs)
 
 # Specify MSVC UTF-8 encoding   
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")

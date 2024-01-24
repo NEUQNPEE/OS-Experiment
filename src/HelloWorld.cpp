@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-21 21:54:35
+ * @LastEditTime : 2024-01-24 16:42:30
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -73,7 +73,6 @@ public:
     // Folder指针
     Folder *thisFolder;
 };
-
 
 class TextFileButton : public QPushButton
 {
@@ -165,12 +164,11 @@ private:
     }
 };
 
-
 // 目录的显示美化布局
 // TODO 改成简单易懂的名字
 class CustomItemDelegate : public QStyledItemDelegate
 {
-Folder *root;
+    Folder *root;
 
 public:
     explicit CustomItemDelegate(QObject *parent = nullptr) : QStyledItemDelegate(parent) {}
@@ -579,7 +577,7 @@ private:
 
         // fileInfo->setData(data);
 
-       // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
+        // ExecutionProcess exeProc = ExecutionProcess::create("文本文件读写进程", PIDGenerator::generatePID(), 1, fileInfo, OperationCommand::CREATE_READ_WRITE);
 
         // exeProc.execute_write(file, &exeProc);
 
@@ -720,8 +718,6 @@ HelloWorld::HelloWorld(QWidget *parent)
 
     // 连接按钮的点击事件
     connect(taskManagerBtn, &QPushButton::clicked, [=]() {
-        // 在此处添加显示任务管理器的逻辑或任何其他操作
-        // 例如，您可以调用showTaskManager函数或其他功能
         showTaskManager();
     });
 
@@ -732,64 +728,13 @@ HelloWorld::HelloWorld(QWidget *parent)
      * 左下角WIN图标部分
      */
     // WIN 图标,将其设置为一个按钮
-    QIcon win_icon("icon/WLOGO.png");
-    QPixmap pixmap = win_icon.pixmap(QSize(50, 50));
-    win_btn = new QPushButton(QIcon(pixmap), "", this);
-    win_btn->resize(pixmap.size());
-    win_btn->move(0, this->height() - win_btn->height());
-
-    win_btn->setStyleSheet("QPushButton{border:0px;}");
-    win_btn->setFlat(true);
-    win_btn->setToolTip("WIN");
-    win_btn->setCursor(Qt::PointingHandCursor);
+    win_btn = new Win(this);
     win_btn->show();
 
-    // 点击WIN图标后，弹出一个窗口，上面包含一个有关机图标的按钮
     connect(win_btn, &QPushButton::clicked, [=]()
-            {
-    // 检查窗口是否已经打开
-    if (win == nullptr) {
-        // 创建新的窗口
-        win = new QWidget();
-        win->setWindowTitle("WIN");
-        win->resize(200, 50);
-        // 设置窗口背景颜色为白色
-        win->setStyleSheet("background-color: white;");
-        // 计算窗口的位置使其在WIN按钮的正上方
-        int x = win_btn->mapToGlobal(win_btn->rect().topLeft()).x();
-        int y = win_btn->mapToGlobal(win_btn->rect().topLeft()).y() - win->height();
-        // 移动窗口到计算出的位置
-        win->move(x, y);
-        // 使用布局管理器
-        QVBoxLayout *layout = new QVBoxLayout(win);
-        // 创建一个关机按钮并添加到布局中
-        QIcon shutdown_icon("icon/shutdown.png");
-        QPushButton *shutdown_btn = new QPushButton(shutdown_icon, "关机", win);
-        shutdown_btn->setStyleSheet("QPushButton{border:0px;}");
-        shutdown_btn->setFlat(true);
-        shutdown_btn->setToolTip("关机");
-        shutdown_btn->setCursor(Qt::PointingHandCursor);
+            { showWinWindow(); });
 
-        layout->addWidget(shutdown_btn);
-        // 点击按钮后执行关闭程序操作
-        connect(shutdown_btn, &QPushButton::clicked, [=]() {
-            QApplication::quit();  
-        });
-        // 设置窗口布局
-        win->setLayout(layout);
-        // 窗口关闭时清理资源
-        connect(win, &QWidget::destroyed, [=]() {
-            delete layout;
-            delete win;
-            win = nullptr;  // 重置指针
-        });
-        // 显示窗口
-        win->show();
-    } else {
-        // 如果窗口已经存在，则将其带到前台
-        win->raise();
-        win->activateWindow();
-    } });
+    
 
     /**
      * 右下角时间部分
@@ -822,6 +767,31 @@ HelloWorld::~HelloWorld()
 
 void HelloWorld::close()
 {
+}
+
+void HelloWorld::notify(QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress)
+    {
+        // 将全局坐标转换为相对于窗口的坐标
+        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+        QPoint pos = this->mapFromGlobal(mouseEvent->globalPos());
+        // debug 检查坐标是否正确
+        int x = pos.x();
+        int y = pos.y();
+        QMouseEvent *newEvent = new QMouseEvent(mouseEvent->type(), pos, mouseEvent->button(), mouseEvent->buttons(), mouseEvent->modifiers());
+
+        if (mouseEvent->button() == Qt::LeftButton)
+        {
+            emit globalLeftClicked(newEvent);
+        }
+        if (mouseEvent->button() == Qt::RightButton)
+        {
+            emit globalRightClicked(newEvent);
+        }
+
+        emit globalClicked(newEvent);
+    }
 }
 
 // 重写resizeEvent函数，实现窗口大小改变时，背景图片大小等部件也跟着改变
@@ -868,11 +838,22 @@ void HelloWorld::showTaskManager()
     TaskManagerWidget *taskManagerWindow = new TaskManagerWidget(this);
 
     taskManagerWindow->updateProcessData();
-    std::vector<int> memoryMassage = show_process_record();
-    // taskManagerWindow->updateMemoryData();
-    // taskManagerWindow->updateDiskData(show_disk_block_status());
-    // taskManagerWindow->updateGroupBlockData(show_group_block_status());
+    taskManagerWindow->updateMemoryData(show_process_record());
+    taskManagerWindow->updateDiskData(show_disk_block_status());
+    taskManagerWindow->updateGroupBlockData(show_group_block_status());
 
     // 显示任务管理器窗口
     taskManagerWindow->show();
+}
+
+void HelloWorld::showWinWindow()
+{
+    // 传入win_btn的位置
+    win_window = new WinWindow(this, win_btn->pos().x(), win_btn->pos().y());
+
+    void (HelloWorld::*globalLeftClicked)(QMouseEvent *) = &HelloWorld::globalLeftClicked;
+    void (WinWindow::*globalMousePressEvent)(QMouseEvent *) = &WinWindow::globalMousePressEvent;
+    connect(this, globalLeftClicked, win_window, globalMousePressEvent);
+
+    win_window->show();
 }
