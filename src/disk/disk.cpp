@@ -2,8 +2,8 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-13 16:54:37
- * @FilePath     : \OS-Experiment\src\disk.cpp
+ * @LastEditTime : 2024-01-25 13:12:52
+ * @FilePath     : \OS-Experiment\src\disk\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
  * Copyright (c) 2023 by NieFire, All Rights Reserved.
@@ -867,7 +867,7 @@ void DiskManager::save_info_in_txt()
 {
     // 将磁盘信息写入txt
     // 如果没有文件就创建，如果有就清空
-    std::ofstream disk_info_file("D:/OS/OS-Experiment/src/disk_info.txt", std::ios::out | std::ios::trunc | std::ios::binary);
+    std::ofstream disk_info_file("D:/OS/OS-Experiment/src/disk/disk_info.txt", std::ios::out | std::ios::trunc | std::ios::binary);
     for (int i = 0; i < disk.get_file_area(); i++)
     {
         disk_info_file.write(disk.get_block(i)->get_content(), disk.get_block_size());
@@ -879,7 +879,7 @@ void DiskManager::save_info_in_txt()
 void DiskManager::load_info_from_txt()
 {
     // 从txt中读取磁盘信息
-    std::ifstream disk_info_file("D:/OS/OS-Experiment/src/disk_info.txt", std::ios::in | std::ios::binary);
+    std::ifstream disk_info_file("D:/OS/OS-Experiment/src/disk/disk_info.txt", std::ios::in | std::ios::binary);
     if (!disk_info_file)
     {
         std::cout << "打开文件失败" << std::endl;

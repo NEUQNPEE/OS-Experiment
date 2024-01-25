@@ -12,7 +12,7 @@
 #include "memory_for_file.h"
 #include "memory_for_process.h"
 #include "MemoryManager.h"
-#include "disk.h"
+#include "disk/disk.h"
 
 //using namespace std;
 
