@@ -10,11 +10,23 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 aux_source_directory(./src srcs)
 
-# 收集UI文件夹下的所有文件
+# 收集UI文件夹
 aux_source_directory(./src/ui/filewindow_txt srcs)
 aux_source_directory(./src/ui/mycomputer srcs)
 aux_source_directory(./src/ui/task_manager srcs)
 aux_source_directory(./src/ui/win srcs)
+
+# 收集application文件夹
+aux_source_directory(./src/application srcs)
+
+# 收集ui_Interaction文件夹
+aux_source_directory(./src/ui_Interaction srcs)
+
+# 收集disk文件夹
+aux_source_directory(./src/disk srcs)
+
+
+
 
 # Specify MSVC UTF-8 encoding   
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")

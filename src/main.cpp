@@ -2,7 +2,7 @@
 #include <QApplication>
 #include <QThread>
 
-#include "OS.h"
+#include "application/OS.h"
 
 #pragma comment(lib, "user32.lib")
 
