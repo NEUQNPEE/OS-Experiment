@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2023-12-19 22:06:20
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-25 13:12:52
+ * @LastEditTime : 2024-01-25 13:19:50
  * @FilePath     : \OS-Experiment\src\disk\disk.cpp
  * @Description  : 磁盘管理
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -485,6 +485,11 @@ std::vector<int> DiskManager::allocate_file_area_blocks(int n)
         // 删除该成组链块
         delete_group_block();
     }
+
+    // 无意外情况，不应在此处返回，此处返回仅有一个-1的数组
+    std::vector<int> error_block_ids;
+    error_block_ids.push_back(-1);
+    return error_block_ids;
 }
 
 // 删除整个成组链块
