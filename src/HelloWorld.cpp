@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-25 13:00:15
+ * @LastEditTime : 2024-01-25 13:34:40
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -754,7 +754,7 @@ void HelloWorld::notify(QEvent *event)
     {
         // 将全局坐标转换为相对于窗口的坐标
         QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
-        QPoint pos = this->mapFromGlobal(mouseEvent->globalPos());
+        QPointF pos = this->mapFromGlobal(mouseEvent->globalPosition());
         // debug 检查坐标是否正确
         int x = pos.x();
         int y = pos.y();
