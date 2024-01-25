@@ -1,6 +1,6 @@
 #include <utility>
 #include "process_manager.h"
-#include "memory_for_process.h"
+#include "../memory/memory_for_process.h"
 
 ProcessManager processManager;
 

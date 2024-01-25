@@ -25,6 +25,15 @@ aux_source_directory(./src/ui_Interaction srcs)
 # 收集disk文件夹
 aux_source_directory(./src/disk srcs)
 
+# 收集memory文件夹
+aux_source_directory(./src/memory srcs)
+
+# 收集file文件夹
+aux_source_directory(./src/file srcs)
+
+# 收集process文件夹
+aux_source_directory(./src/process srcs)
+
 
 
 
