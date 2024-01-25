@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-24 16:42:30
+ * @LastEditTime : 2024-01-25 13:00:15
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -725,39 +725,18 @@ HelloWorld::HelloWorld(QWidget *parent)
     task->show(); });
 
     /**
-     * 左下角WIN图标部分
+     * 左下角WIN图标部分，目前为一个Button,连接着win_window
      */
-    // WIN 图标,将其设置为一个按钮
     win_btn = new Win(this);
     win_btn->show();
 
     connect(win_btn, &QPushButton::clicked, [=]()
             { showWinWindow(); });
 
-    
-
     /**
-     * 右下角时间部分
+     * 右下角时间部分，目前为一个Label
      */
-    // 创建一个标签，用于显示时间
-    timeLabel = new QLabel(this);
-    timeLabel->setStyleSheet("color: black; font-size: 20px;");
-    timeLabel->setAlignment(Qt::AlignCenter);
-    timeLabel->resize(200, 50);
-    timeLabel->move(this->width() - timeLabel->width(), this->height() - timeLabel->height());
-    timeLabel->show();
-
-    // 创建一个定时器，每秒更新一次时间
-    QTimer *timer = new QTimer(this);
-    connect(timer, &QTimer::timeout, [=]()
-            {
-        // 获取当前时间
-        QDateTime currentDateTime = QDateTime::currentDateTime();
-        // 格式化时间
-        QString currentTime = currentDateTime.toString("yyyy-MM-dd hh:mm:ss");
-        // 设置标签的文本
-        timeLabel->setText(currentTime); });
-    timer->start(1000); // 启动定时器，每秒触发一次
+    timeLabel = new DateTimeLabel(this);
 }
 
 HelloWorld::~HelloWorld()
