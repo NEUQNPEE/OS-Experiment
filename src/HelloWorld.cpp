@@ -2,7 +2,7 @@
  * @Author       : NieFire planet_class@foxmail.com
  * @Date         : 2024-01-03 20:15:46
  * @LastEditors  : NieFire planet_class@foxmail.com
- * @LastEditTime : 2024-01-25 13:34:40
+ * @LastEditTime : 2024-02-25 14:15:03
  * @FilePath     : \OS-Experiment\src\HelloWorld.cpp
  * @Description  :
  * ( ﾟ∀。)只要加满注释一切都会好起来的( ﾟ∀。)
@@ -678,17 +678,8 @@ HelloWorld::HelloWorld(QWidget *parent)
      * 底部状态栏按钮部分
      */
     // 将下面的状态栏设置为一个按钮
-    status_btn = new QPushButton(this);
-    status_btn->resize(this->width(), 50);
-    status_btn->move(0, this->height() - status_btn->height());
+    status_btn = new StatusBar(this);
 
-    // 设置按钮的样式，包括背景色和其他属性
-    status_btn->setStyleSheet("QPushButton { background-color: white; border: 0px; }");
-    status_btn->setText("");
-    status_btn->setToolTip("");
-    status_btn->setFlat(true);
-    status_btn->setCursor(Qt::ArrowCursor);
-    status_btn->setContextMenuPolicy(Qt::CustomContextMenu);
     status_btn->show();
 
     // 连接按钮的信号和槽

@@ -33,6 +33,7 @@
 #include "ui/win/win.h"
 #include "ui/win/win_window.h"
 #include "ui/win/date_time_Label.h"
+#include "ui/status_bar/status_bar.h"
 
 #include "process/process_manager.h"
 class HelloWorld : public QMainWindow

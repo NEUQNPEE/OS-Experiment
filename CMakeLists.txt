@@ -15,6 +15,7 @@ aux_source_directory(./src/ui/filewindow_txt srcs)
 aux_source_directory(./src/ui/mycomputer srcs)
 aux_source_directory(./src/ui/task_manager srcs)
 aux_source_directory(./src/ui/win srcs)
+aux_source_directory(./src/ui/status_bar srcs)
 
 # 收集application文件夹
 aux_source_directory(./src/application srcs)
@@ -33,7 +34,6 @@ aux_source_directory(./src/file srcs)
 
 # 收集process文件夹
 aux_source_directory(./src/process srcs)
-
 
 
 
