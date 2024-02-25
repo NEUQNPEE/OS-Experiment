@@ -28,12 +28,7 @@
 
 #include <QMouseEvent>
 
-#include "ui/task_manager/task_manager.h"
-#include "ui/filewindow_txt/txt_window.h"
-#include "ui/win/win.h"
-#include "ui/win/win_window.h"
-#include "ui/win/date_time_Label.h"
-#include "ui/status_bar/status_bar.h"
+#include "ui/ui.h"
 
 #include "process/process_manager.h"
 class HelloWorld : public QMainWindow
