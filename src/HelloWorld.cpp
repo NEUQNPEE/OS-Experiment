@@ -675,11 +675,9 @@ HelloWorld::HelloWorld(QWidget *parent)
     TextFileButton *textFileIcon = new TextFileButton(this, mycomputer_btn->height(), "root/first.txt");
 
     /**
-     * 底部状态栏按钮部分
+     * 底部状态栏按钮
      */
-    // 将下面的状态栏设置为一个按钮
     status_btn = new StatusBar(this);
-
     status_btn->show();
 
     // 连接按钮的信号和槽

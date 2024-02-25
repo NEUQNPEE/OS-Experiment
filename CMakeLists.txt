@@ -8,34 +8,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
-aux_source_directory(./src srcs)
 
-# 收集UI文件夹
-aux_source_directory(./src/ui/filewindow_txt srcs)
-aux_source_directory(./src/ui/mycomputer srcs)
-aux_source_directory(./src/ui/task_manager srcs)
-aux_source_directory(./src/ui/win srcs)
-aux_source_directory(./src/ui/status_bar srcs)
-
-# 收集application文件夹
-aux_source_directory(./src/application srcs)
-
-# 收集ui_Interaction文件夹
-aux_source_directory(./src/ui_Interaction srcs)
-
-# 收集disk文件夹
-aux_source_directory(./src/disk srcs)
-
-# 收集memory文件夹
-aux_source_directory(./src/memory srcs)
-
-# 收集file文件夹
-aux_source_directory(./src/file srcs)
-
-# 收集process文件夹
-aux_source_directory(./src/process srcs)
-
-
+file(GLOB_RECURSE srcs ./src/*.cpp ./src/*.h)
 
 # Specify MSVC UTF-8 encoding   
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
