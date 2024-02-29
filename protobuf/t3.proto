@@ -3,24 +3,4 @@ syntax = "proto3";
 message Process {
   string name = 1;
   int32 pid = 2;
-  repeated string arguments = 3;
-  repeated string environment_variables = 4;
-  repeated FileDescriptor file_descriptors = 5;
-  repeated NetworkConnection network_connections = 6;
-  repeated Process child_processes = 7;
-}
-
-message FileDescriptor {
-  int32 fd = 1;
-  string file_path = 2;
-  bool is_directory = 3;
-  int64 file_size = 4;
-}
-
-message NetworkConnection {
-  string source_address = 1;
-  int32 source_port = 2;
-  string destination_address = 3;
-  int32 destination_port = 4;
-  string protocol = 5;
 }
