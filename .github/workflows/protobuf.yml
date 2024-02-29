@@ -22,10 +22,6 @@ jobs:
           echo "$proto_files" > proto_files.txt
           echo "Proto files found and saved to proto_files.txt"
 
-      - name: Transfer .proto files to server
-        run: |
-          scp $(cat proto_files.txt) root@47.115.227.222:/root/protobuf/yourdata
-
       - name: Execute protoc command on server
         run: |
           ssh root@47.115.227.222 'cd /root/protobuf/yourdata && protoc *.proto --cpp_out=/root/protobuf/OS-Experiment/protobuf/'
