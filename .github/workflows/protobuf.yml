@@ -19,12 +19,12 @@ jobs:
           proto_files=$(find . -type f -name "*.proto")
           
           # 输出所有的 .proto 文件
-          echo "Proto files found:"
-          echo "$proto_files"
+          echo "$proto_files" > proto_files.txt
+          echo "Proto files found and saved to proto_files.txt"
 
       - name: Transfer .proto files to server
         run: |
-          scp $(cat changed_proto_files.txt) root@47.115.227.222:/root/protobuf/yourdata
+          scp $(cat proto_files.txt) root@47.115.227.222:/root/protobuf/yourdata
 
       - name: Execute protoc command on server
         run: |
