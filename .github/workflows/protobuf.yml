@@ -15,22 +15,12 @@ jobs:
 
       - name: Detect proto changes
         run: |
-          # 获取最新的提交哈希值
-          latest_commit=$(git rev-parse HEAD)
-      
-          # 获取之前的提交哈希值
-          previous_commit=$(git rev-parse HEAD^ 2>/dev/null || echo "")
-      
-          # 比较最新提交和之前提交之间的差异，筛选出修改的.proto文件
-          if [[ -n "$previous_commit" ]]; then
-            changed_proto_files=$(git diff --name-only $previous_commit $latest_commit | grep '\.proto$')
-          else
-            changed_proto_files=$(git diff --name-only $latest_commit | grep '\.proto$')
-          fi
-      
-          # 输出修改的.proto文件
-          echo "Changed .proto files:"
-          echo "$changed_proto_files"
+          # 递归搜索当前目录及其子目录下的所有 .proto 文件
+          proto_files=$(find . -type f -name "*.proto")
+          
+          # 输出所有的 .proto 文件
+          echo "Proto files found:"
+          echo "$proto_files"
 
       - name: Transfer .proto files to server
         run: |
