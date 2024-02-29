@@ -13,15 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Detect proto changes
-        run: |
-          # 递归搜索当前目录及其子目录下的所有 .proto 文件
-          proto_files=$(find . -type f -name "*.proto")
-          
-          # 输出所有的 .proto 文件
-          echo "$proto_files" > proto_files.txt
-          echo "Proto files found and saved to proto_files.txt"
-
       - name: Execute protoc command on server
         uses: appleboy/ssh-action@master
         with:
@@ -30,5 +21,11 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script:
-            cd /root/protobuf/yourdata
+            cd /root/protobuf/OS-Experiment
+            git pull
+            cd /root/protobuf/OS-Experiment/protobuf
+            protoc *.proto --cpp_out=./
+            git add .
+            git commit -m "Update generated files"
+            git push
           
