@@ -20,14 +20,14 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          script:
-            cd /root/protobuf/OS-Experiment
-            mkdir gitt1
-            git checkout eekspeed-patch-1
-            git pull
-            cd /root/protobuf/OS-Experiment/protobuf
-            protoc *.proto --cpp_out=./
-            git add .
-            git commit -m "Update generated files"
-            git push
-          
+      - name: Execute
+        run: |
+          cd /root/protobuf/OS-Experiment
+          mkdir gitt1
+          git checkout eekspeed-patch-1
+          git pull
+          cd /root/protobuf/OS-Experiment/protobuf
+          protoc *.proto --cpp_out=./
+          git add .
+          git commit -m "Update generated files"
+          git push
