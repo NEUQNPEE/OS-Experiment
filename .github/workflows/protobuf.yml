@@ -22,6 +22,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script:
             cd /root/protobuf/OS-Experiment
+            git checkout eekspeed-patch-1
             git pull
             cd /root/protobuf/OS-Experiment/protobuf
             protoc *.proto --cpp_out=./
