@@ -23,9 +23,12 @@ jobs:
           echo "Proto files found and saved to proto_files.txt"
 
       - name: Execute protoc command on server
-        run: |
-          ssh root@47.115.227.222 'cd /root/protobuf/yourdata && protoc *.proto --cpp_out=/root/protobuf/OS-Experiment/protobuf/'
-
-      - name: Commit and push generated files
-        run: |
-          ssh root@47.115.227.222 'cd /root/protobuf/OS-Experiment/ && git add . && git commit -m "update protobuf file" && git push'
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script:
+            cd /root/protobuf/yourdata
+          
