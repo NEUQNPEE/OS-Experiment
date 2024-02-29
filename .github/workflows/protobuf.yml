@@ -3,7 +3,7 @@ name: Proto Workflow
 on:
   push:
     branches:
-      - '*'
+      - 'main'
 
 jobs:
   build:
@@ -22,8 +22,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /root/protobuf/OS-Experiment
-            mkdir gitt1
-            git checkout eekspeed-patch-1
+            git checkout main
             git pull
             cd /root/protobuf/OS-Experiment/protobuf
             protoc *.proto --cpp_out=./
