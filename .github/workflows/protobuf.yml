@@ -15,7 +15,7 @@ jobs:
 
       - name: Detect proto changes
         run: |
-          ./chmod +x detect_proto_changes.sh
+          chmod +x ./detect_proto_changes.sh
           ./detect_proto_changes.sh > changed_proto_files.txt
 
       - name: Transfer .proto files to server
