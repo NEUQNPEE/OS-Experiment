@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message Process {
+  string name = 1;
+  int32 pid = 2;
+  repeated string arguments = 3;
+  bool isRunning = 4;
+}
