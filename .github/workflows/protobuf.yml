@@ -18,7 +18,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.ALI_PRIVATE_KEY }}
           port: ${{ secrets.PORT }}
           script:
             cd /root/protobuf/OS-Experiment
