@@ -1,0 +1,31 @@
+name: Proto Workflow
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Detect proto changes
+        run: |
+          chmod +x detect_proto_changes.sh
+          ./detect_proto_changes.sh > changed_proto_files.txt
+
+      - name: Transfer .proto files to server
+        run: |
+          scp $(cat changed_proto_files.txt) root@47.115.227.222:/root/protobuf/yourdata
+
+      - name: Execute protoc command on server
+        run: |
+          ssh root@47.115.227.222 'cd /root/protobuf/yourdata && protoc *.proto --cpp_out=/root/protobuf/OS-Experiment/protobuf/'
+
+      - name: Commit and push generated files
+        run: |
+          ssh root@47.115.227.222 'cd /root/protobuf/OS-Experiment/ && git add . && git commit -m "update protobuf file" && git push'
