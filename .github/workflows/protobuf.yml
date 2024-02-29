@@ -1,0 +1,31 @@
+name: Proto Workflow
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Execute protoc command on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /root/protobuf/OS-Experiment
+            git checkout main
+            git pull
+            cd /root/protobuf/OS-Experiment/protobuf
+            protoc *.proto --cpp_out=./
+            git add .
+            git commit -m "Update generated files"
+            git push
