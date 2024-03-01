@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-message Car {
-    string make = 1;
-    string model = 2;
-    int32 year = 3;
-}

@@ -1,6 +1,0 @@
-syntax = "proto3";
-
-message Process {
-  string name = 1;
-  int32 pid = 2;
-}

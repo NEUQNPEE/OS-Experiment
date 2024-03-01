@@ -36,7 +36,7 @@ std::string NamedPipe::readData() const {
 }
 
 
-Process::Process(string &name, int pid, int priority, ProcessState state, ProcessType type) {
+WinProcess::WinProcess(string &name, int pid, int priority, ProcessState state, ProcessType type) {
     this->name = name;
     this->pid = pid;
     this->priority = priority;
@@ -45,11 +45,11 @@ Process::Process(string &name, int pid, int priority, ProcessState state, Proces
 }
 
 // 重载小于运算符，用于比较 Process 对象的优先级
-bool Process::operator<(const Process &other) const {
+bool WinProcess::operator<(const WinProcess &other) const {
     return priority < other.priority;
 }
 
-string Process::getProcessStateStr() const {
+string WinProcess::getProcessStateStr() const {
     switch (state) {
         case ProcessState::RUNNING:
             return "运行";
@@ -77,7 +77,7 @@ void ProcessManager::deleteProcess(int pid) {
 
 // 构造方法
 InitProcess::InitProcess(string &name, int pid, int priority, ProcessType type)
-        : Process(name, pid, priority, ProcessState::RUNNING, type) {}
+        : WinProcess(name, pid, priority, ProcessState::RUNNING, type) {}
 
 // tip create方法因为字符串形式的参数传递需要全部修改
 InitProcess InitProcess::create(string name, int pid, int priority, ProcessType processType) {
@@ -108,7 +108,7 @@ Folder *InitProcess::get_folder() {
 
 // 构造方法
 DataGenerationProcess::DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-        : Process(name, pid, priority, state, type) {}
+        : WinProcess(name, pid, priority, state, type) {}
 
 // 构造方法，参数为：进程名，进程id，进程优先级，文件信息，操作指令
 void DataGenerationProcess::
@@ -166,7 +166,7 @@ void DataGenerationProcess::destroy() {
 
 // 构造方法
 DataDeletionProcess::DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-        : Process(name, pid, priority, state, type) {}
+        : WinProcess(name, pid, priority, state, type) {}
 
 bool DataDeletionProcess::
 create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
@@ -211,7 +211,7 @@ void DataDeletionProcess::destroy() {
 
 // 构造方法
 ExecutionProcess::ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type)
-        : Process(name, pid, priority, state, type) {}
+        : WinProcess(name, pid, priority, state, type) {}
 
 
 ExecutionProcess ExecutionProcess::create(string name, int pid, int priority, FileInfo *fileInfo, OperationCommand command) {
@@ -353,7 +353,7 @@ void TaskScheduler::joinThreads() {
 
 void TaskScheduler::schedule() {
     // 从就绪队列中取出优先级最高的进程
-    Process *process = processManager.readyQueue.top();
+    WinProcess *process = processManager.readyQueue.top();
     process->state = ProcessState::RUNNING;
     // 执行进程
     process->execute();
@@ -367,7 +367,7 @@ void TaskScheduler::schedule() {
 
 void TaskScheduler::end()
 {
-    Process *process = processManager.readyQueue.top();
+    WinProcess *process = processManager.readyQueue.top();
     processManager.readyQueue.pop();
     process->destroy();
 }
@@ -477,6 +477,6 @@ vector<int> show_group_block_status() {
     return memory_get_group_block_status();
 }
 
-vector<Process *> get_process_list() {
+vector<WinProcess *> get_process_list() {
     return processManager.processList;
 }

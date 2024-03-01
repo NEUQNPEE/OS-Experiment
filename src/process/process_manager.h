@@ -142,7 +142,7 @@ struct NamedPipe {
 /**
  * 进程类
  */
-class Process {
+class WinProcess {
 public:
     string name;                 // 进程名
     int pid;                     // 进程ID
@@ -153,13 +153,13 @@ public:
     FileInfo *fileInfo{};        // 文件信息
     OperationCommand command;    // 操作命令
 
-    Process(string &name, int pid, int priority, ProcessState state, ProcessType type);
+    WinProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
 
     // 默认构造方法
-    Process() = default;
+    WinProcess() = default;
 
     // 重载小于运算符，用于比较 Process 对象的优先级
-    bool operator<(const Process &other) const;
+    bool operator<(const WinProcess &other) const;
 
     // 虚函数 execute,用于执行进程
     virtual void execute() = 0;
@@ -176,9 +176,9 @@ public:
  */
 class ProcessManager {
 public:
-    std::vector<Process *> processList;
-    std::priority_queue<Process *> readyQueue;
-    std::queue<Process *> blockQueue;
+    std::vector<WinProcess *> processList;
+    std::priority_queue<WinProcess *> readyQueue;
+    std::queue<WinProcess *> blockQueue;
     // 新建一个用于传递命令的消息队列，0为退出，1为写数据
     // std::queue<int> commandQueue;
 
@@ -189,7 +189,7 @@ public:
 /**
  * 初始化进程,直到操作系统关闭才会释放内存
  */
-class InitProcess : public Process {
+class InitProcess : public WinProcess {
 private:
     // 构造方法
     InitProcess(string &name, int pid, int priority, ProcessType type);
@@ -209,7 +209,7 @@ public:
 /**
  * 数据生成进程
  */
-class DataGenerationProcess : public Process {
+class DataGenerationProcess : public WinProcess {
 public:
     // 构造方法
     DataGenerationProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -224,7 +224,7 @@ public:
 /**
  * 数据删除进程
  */
-class DataDeletionProcess : public Process {
+class DataDeletionProcess : public WinProcess {
 public:
     // 构造方法
     DataDeletionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -249,7 +249,7 @@ enum class UserInputCommand {
 /**
  * 执行进程
  */
-class ExecutionProcess : public Process {
+class ExecutionProcess : public WinProcess {
 public:
     // 构造方法
     ExecutionProcess(string &name, int pid, int priority, ProcessState state, ProcessType type);
@@ -331,4 +331,4 @@ vector<bool> show_disk_block_status();
 
 vector<int> show_group_block_status();
 
-vector<Process *> get_process_list();
+vector<WinProcess *> get_process_list();
